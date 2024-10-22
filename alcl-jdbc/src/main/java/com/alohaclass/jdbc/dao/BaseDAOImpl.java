@@ -8,8 +8,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.alohaclass.jdbc.config.Config;
 import com.alohaclass.jdbc.dto.Page;
 import com.alohaclass.jdbc.dto.PageInfo;
+import com.alohaclass.jdbc.utils.StringUtil;
 
 public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T> {
 
@@ -324,7 +326,13 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
                     sql.append(", ");
                     placeholders.append(", ");
                 }
-                sql.append(field.getName());
+				String fieldName = field.getName();
+				// mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
+				// System.out.println("Config.mapCamelCaseToUnderscore : " + Config.mapCamelCaseToUnderscore);
+				if (Config.mapCamelCaseToUnderscore) {
+					fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+				}
+                sql.append(fieldName);
                 placeholders.append("?");
                 first = false;
             }
@@ -333,7 +341,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
         sql.append(") ");
         placeholders.append(")");
         sql.append(placeholders.toString());
-
+        
         try {
             psmt = con.prepareStatement(sql.toString());
             int index = 1;
@@ -399,6 +407,10 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
                     sql.append(", ");
                     placeholders.append(", ");
                 }
+				// mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
+				// if (Config.mapCamelCaseToUnderscore) {
+				//	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+				// }
                 sql.append(fieldName);
                 placeholders.append("?");
                 first = false;
@@ -462,13 +474,16 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
                 if (!first) {
                     sql.append(", ");
                 }
-                sql.append(field.getName()).append(" = ?");
+                // mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
+                String fieldName = field.getName();
+                if(Config.mapCamelCaseToUnderscore) {
+                	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+                }
+                sql.append(fieldName).append(" = ?");
                 first = false;
             }
         }
-
         sql.append(whereClause);
-
         try {
             psmt = con.prepareStatement(sql.toString());
             int index = 1;
@@ -547,7 +562,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 					if (!first) {
 						sql.append(", ");
 					}
-					sql.append(field.getName()).append(" = ?");
+					sql.append(fieldName).append(" = ?");
 					first = false;
 				}
 			}

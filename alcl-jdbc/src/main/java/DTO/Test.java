@@ -13,5 +13,6 @@ public class Test {
 	private int no;
 	private String name;
 	private int age;
+	private String mainTitle;
 	
 }
