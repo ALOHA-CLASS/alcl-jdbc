@@ -57,6 +57,7 @@ public interface BaseDAO<T> {
 	
 	// 목록
 	List<T> list() throws Exception;
+	List<T> listBy(Map<Object, Object> fields) throws Exception;
 	
 	// 페이징
 	PageInfo<T> page() throws Exception;

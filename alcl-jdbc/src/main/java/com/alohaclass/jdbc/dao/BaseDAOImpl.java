@@ -37,7 +37,61 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		}
 		return list;
 	}
+	
+	
 
+	@Override
+	public List<T> listBy(Map<Object, Object> fields) throws Exception {
+		StringBuilder sql = new StringBuilder("SELECT * FROM " + table() + " WHERE ");
+        boolean first = true;
+
+        for (Map.Entry<Object, Object> entry : fields.entrySet()) {
+            if (!first) {
+                sql.append(" AND ");
+            }
+            sql.append(entry.getKey()).append(" = ?");
+            first = false;
+        }
+
+        List<T> list = new ArrayList<T>();
+        try {
+            psmt = con.prepareStatement(sql.toString());
+
+            int index = 1;
+            for (Map.Entry<Object, Object> entry : fields.entrySet()) {
+                Object value = entry.getValue();
+                if (value instanceof String) {
+                    psmt.setString(index++, (String) value);
+                } else if (value instanceof Boolean) {
+                    psmt.setBoolean(index++, (Boolean) value);
+                } else if (value instanceof Long) {
+                    psmt.setLong(index++, (Long) value);
+                } else if (value instanceof Integer) {
+                    psmt.setInt(index++, (Integer) value);
+                } else if (value instanceof Double) {
+                    psmt.setDouble(index++, (Double) value);
+                } else if (value instanceof Float) {
+                    psmt.setFloat(index++, (Float) value);
+                } else if (value instanceof Date) {
+                    psmt.setDate(index++, new java.sql.Date(((Date) value).getTime()));
+                } else {
+                    psmt.setObject(index++, value);
+                }
+            }
+            rs = psmt.executeQuery();
+            while (rs.next()) {
+                T entity = map(rs);
+                list.add(entity);
+                return list;
+            }
+        } catch (Exception e) {
+            System.err.println(table() + " - listBy(Map<Object, Object> fields) 조회 중 에러");
+            e.printStackTrace();
+        }
+        return null;
+	}
+	
+	
 	@Override
 	public PageInfo<T> page() throws Exception {
 		int total = count();
