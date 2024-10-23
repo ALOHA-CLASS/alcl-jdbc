@@ -220,7 +220,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 	@Override
 	public T select(Object pk) throws Exception {
 		String sql = " SELECT * "
-				   + " FROM users "
+				   + " FROM " + table()
 				   + " WHERE " + pk() + " = ? "
 				   ;
 		try {
