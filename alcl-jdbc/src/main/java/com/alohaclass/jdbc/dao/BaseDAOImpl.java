@@ -82,8 +82,8 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
             while (rs.next()) {
                 T entity = map(rs);
                 list.add(entity);
-                return list;
             }
+            return list;
         } catch (Exception e) {
             System.err.println(table() + " - listBy(Map<Object, Object> fields) 조회 중 에러");
             e.printStackTrace();
