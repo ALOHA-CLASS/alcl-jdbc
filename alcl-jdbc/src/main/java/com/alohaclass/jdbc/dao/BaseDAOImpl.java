@@ -126,7 +126,8 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		Page page = pageInfo.getPage();
 		if( page == null || page.getTotal() == 0 ) {
 			int total = count(pageInfo);
-			page = new Page(total);
+			if( page == null ) page = new Page();
+			page.setTotal(total);
 		}
 		String searchCondition = getSearchOptions(pageInfo.getSearchOptions());
 		int searchCounditionCount = pageInfo.getSearchOptions().size();
@@ -165,7 +166,8 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 	public PageInfo<T> page(Page page) throws Exception {
 		if( page == null || page.getTotal() == 0 ) {
 			int total = count();
-			page = new Page(total);
+			if( page == null ) page = new Page();
+			page.setTotal(total);
 		}
 		String sql = " SELECT * "
 				   + " FROM " + table()
@@ -197,7 +199,8 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 	public PageInfo<T> page(Page page, Map<String, String> filterOptions) throws Exception {
 		if( page == null || page.getTotal() == 0 ) {
 			int total = count();
-			page = new Page(total);
+			if( page == null ) page = new Page();
+			page.setTotal(total);
 		}
 		String orderBy = getFilterOptions(filterOptions);
 		String sql = " SELECT * "
@@ -232,7 +235,8 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 	public PageInfo<T> page(Page page, String keyword, List<String> searchOptions) throws Exception {
 		if( page == null || page.getTotal() == 0 ) {
 			int total = count(keyword, searchOptions);
-			page = new Page(total);
+			if( page == null ) page = new Page();
+			page.setTotal(total);
 		}
 		String searchCondition = getSearchOptions(searchOptions);
 		int searchCounditionCount = searchOptions == null ? 0 : searchOptions.size();
@@ -273,7 +277,8 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			throws Exception {
 		if( page == null || page.getTotal() == 0 ) {
 			int total = count(keyword, searchOptions);
-			page = new Page(total);
+			if( page == null ) page = new Page();
+			page.setTotal(total);
 		}
 				
 		String searchCondition = getSearchOptions(searchOptions);
