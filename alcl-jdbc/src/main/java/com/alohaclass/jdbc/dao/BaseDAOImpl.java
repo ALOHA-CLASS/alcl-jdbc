@@ -103,8 +103,11 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		PageInfo<T> pageInfo = new PageInfo<>();
 		List<T> list = new ArrayList<T>();
 		try {
-			stmt = con.createStatement();
-			rs = stmt.executeQuery(sql);
+			psmt = con.prepareStatement(sql);
+			int index = 1;
+			psmt.setInt(index++, page.getIndex());
+			psmt.setInt(index++, page.getSize());
+			rs = psmt.executeQuery();
 			while( rs.next() ) {
 				T entity = map(rs);
 				list.add(entity);
@@ -138,13 +141,13 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		List<T> list = new ArrayList<T>();
 		try {
 			psmt = con.prepareStatement(sql);
-			rs = psmt.executeQuery();
 			int index = 1;
 			for (int i = 0; i < searchCounditionCount; i++) {
 				psmt.setString(index++, pageInfo.getKeyword());
 			}
 			psmt.setInt(index++, page.getIndex());
 			psmt.setInt(index++, page.getSize());
+			rs = psmt.executeQuery();
 			while( rs.next() ) {
 				T entity = map(rs);
 				list.add(entity);
@@ -171,10 +174,10 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		List<T> list = new ArrayList<T>();
 		try {
 			psmt = con.prepareStatement(sql);
-			rs = psmt.executeQuery();
 			int index = 1;
 			psmt.setInt(index++, page.getIndex());
 			psmt.setInt(index++, page.getSize());
+			rs = psmt.executeQuery();
 			while( rs.next() ) {
 				T entity = map(rs);
 				list.add(entity);
@@ -207,10 +210,10 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		List<T> list = new ArrayList<T>();
 		try {
 			psmt = con.prepareStatement(sql);
-			rs = psmt.executeQuery();
 			int index = 1;
 			psmt.setInt(index++, page.getIndex());
 			psmt.setInt(index++, page.getSize());
+			rs = psmt.executeQuery();
 			while( rs.next() ) {
 				T entity = map(rs);
 				list.add(entity);
@@ -232,7 +235,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			page = new Page(total);
 		}
 		String searchCondition = getSearchOptions(searchOptions);
-		int searchCounditionCount = searchOptions.size();
+		int searchCounditionCount = searchOptions == null ? 0 : searchOptions.size();
 		String sql = " SELECT * "
 				   + " FROM " + table()
 				   + " WHERE 1=1"
@@ -245,13 +248,13 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		List<T> list = new ArrayList<T>();
 		try {
 			psmt = con.prepareStatement(sql);
-			rs = psmt.executeQuery();
 			int index = 1;
 			for (int i = 0; i < searchCounditionCount; i++) {
 				psmt.setString(index++, keyword);
 			}
 			psmt.setInt(index++, page.getIndex());
 			psmt.setInt(index++, page.getSize());
+			rs = psmt.executeQuery();
 			while( rs.next() ) {
 				T entity = map(rs);
 				list.add(entity);
@@ -292,13 +295,14 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		List<T> list = new ArrayList<T>();
 		try {
 			psmt = con.prepareStatement(sql);
-			rs = psmt.executeQuery();
+			
 			int index = 1;
 			for (int i = 0; i < searchCounditionCount; i++) {
 				psmt.setString(index++, keyword);
 			}
 			psmt.setInt(index++, page.getIndex());
 			psmt.setInt(index++, page.getSize());
+			rs = psmt.executeQuery();
 			while( rs.next() ) {
 				T entity = map(rs);
 				list.add(entity);
@@ -855,7 +859,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 	public int count(String keyword, List<String> searchOptions) throws Exception {
 		int total = 0;
 		String searchCondition = getSearchOptions(searchOptions);
-		int searchConditionCount = searchOptions.size();
+		int searchConditionCount = searchOptions == null ? 0 : searchOptions.size();
 		String sql = "SELECT COUNT(*) FROM " + table() + " WHERE 1=1 AND (" + searchCondition + ")";
 
 		try {
