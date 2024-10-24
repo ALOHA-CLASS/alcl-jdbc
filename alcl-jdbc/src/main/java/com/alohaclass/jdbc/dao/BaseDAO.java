@@ -63,6 +63,7 @@ public interface BaseDAO<T> {
 	PageInfo<T> page() throws Exception;
 	PageInfo<T> page(PageInfo<T> pageInfo) throws Exception;
 	PageInfo<T> page(Page page) throws Exception;
+	PageInfo<T> page(Page page, Map<String, String> filterOptions) throws Exception;
 	PageInfo<T> page(Page page, String keyword, List<String> searchOptions) throws Exception;
 	PageInfo<T> page(Page page, String keyword, List<String> searchOptions, Map<String, String> filterOptions) throws Exception;
 	
