@@ -8,6 +8,7 @@ public class Config {
     public static boolean mapUnderscoreToCamelCase = false;
     public static boolean mapCamelCaseToUnderscore = false;
     public static boolean autoCommit = true;
+    public static boolean sqlLog = true;
     public static String url = null;
     public static String username = null;
     public static String password = null;
@@ -24,6 +25,7 @@ public class Config {
             password = prop.getProperty("db.password");
             mapUnderscoreToCamelCase = Boolean.parseBoolean(prop.getProperty("mapUnderscoreToCamelCase", "false"));
             mapCamelCaseToUnderscore = Boolean.parseBoolean(prop.getProperty("mapCamelCaseToUnderscore", "false"));
+            sqlLog = Boolean.parseBoolean(prop.getProperty("sql.log", "true"));
             autoCommit = Boolean.parseBoolean(prop.getProperty("autoCommit", "true"));
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -31,3 +33,7 @@ public class Config {
     }
 
 }
+
+
+
+

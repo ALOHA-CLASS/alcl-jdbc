@@ -26,6 +26,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		List<T> list = new ArrayList<T>();
 		try {
 			stmt = con.createStatement();
+			log(sql);
 			rs = stmt.executeQuery(sql);
 			while( rs.next() ) {
 				T entity = map(rs);
@@ -78,6 +79,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
                     psmt.setObject(index++, value);
                 }
             }
+            log(sql);
             rs = psmt.executeQuery();
             while (rs.next()) {
                 T entity = map(rs);
@@ -107,6 +109,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			int index = 1;
 			psmt.setInt(index++, page.getIndex());
 			psmt.setInt(index++, page.getSize());
+			log(sql);
 			rs = psmt.executeQuery();
 			while( rs.next() ) {
 				T entity = map(rs);
@@ -148,6 +151,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			}
 			psmt.setInt(index++, page.getIndex());
 			psmt.setInt(index++, page.getSize());
+			log(sql);
 			rs = psmt.executeQuery();
 			while( rs.next() ) {
 				T entity = map(rs);
@@ -179,6 +183,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			int index = 1;
 			psmt.setInt(index++, page.getIndex());
 			psmt.setInt(index++, page.getSize());
+			log(sql);
 			rs = psmt.executeQuery();
 			while( rs.next() ) {
 				T entity = map(rs);
@@ -216,6 +221,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			int index = 1;
 			psmt.setInt(index++, page.getIndex());
 			psmt.setInt(index++, page.getSize());
+			log(sql);
 			rs = psmt.executeQuery();
 			while( rs.next() ) {
 				T entity = map(rs);
@@ -258,6 +264,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			}
 			psmt.setInt(index++, page.getIndex());
 			psmt.setInt(index++, page.getSize());
+			log(sql);
 			rs = psmt.executeQuery();
 			while( rs.next() ) {
 				T entity = map(rs);
@@ -307,6 +314,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			}
 			psmt.setInt(index++, page.getIndex());
 			psmt.setInt(index++, page.getSize());
+			log(sql);
 			rs = psmt.executeQuery();
 			while( rs.next() ) {
 				T entity = map(rs);
@@ -345,7 +353,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			} else {
 				psmt.setObject(1, pk);
 			}
-			
+			log(sql);
 			rs = psmt.executeQuery();
 			if( rs.next() ) {
 				T entity = map(rs);
@@ -400,6 +408,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
                     psmt.setObject(index++, value);
                 }
             }
+            log(sql);
             rs = psmt.executeQuery();
             if (rs.next()) {
                 T entity = map(rs);
@@ -470,6 +479,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
                     }
                 }
             }
+            log(sql);
             result = psmt.executeUpdate();
         } catch (Exception e) {
             System.err.println(table() + " - insert(entity) 도중 에러");
@@ -548,7 +558,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
                     }
                 }
             }
-
+            log(sql);
             result = psmt.executeUpdate();
         } catch (Exception e) {
             System.err.println(table() + " - insert(entity, String...) 도중 에러");
@@ -637,10 +647,9 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
             } else {
                 psmt.setObject(index, pkValue);
             }
-            System.out.println("[SQL] - alcl.jdbc");
-            System.out.println("==================================================");
-            System.out.println(sql);
-            System.out.println("==================================================");
+            
+            log(sql);
+            
             result = psmt.executeUpdate();
         } catch (Exception e) {
             System.err.println(table() + " - update(entity) 도중 에러");
@@ -737,10 +746,9 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			} else {
 				psmt.setObject(index, pkValue);
 			}
-			System.out.println("[SQL] - alcl.jdbc");
-            System.out.println("==================================================");
-            System.out.println(sql);
-            System.out.println("==================================================");
+			
+			log(sql);
+			
 			result = psmt.executeUpdate();
 		} catch (Exception e) {
 			System.err.println(table() + " - update(entity, String...) 도중 에러");
@@ -770,6 +778,9 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			} else {
 				psmt.setObject(1, pk);
 			}
+			
+			log(sql);
+			
 			result = psmt.executeUpdate();
 		} catch (Exception e) {
 			System.err.println(table() + " - delete(pk) 도중 에러");
@@ -818,6 +829,9 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 					psmt.setObject(index++, value);
 				}
 			}
+			
+			log(sql);
+			
 			result = psmt.executeUpdate();
 		} catch (Exception e) {
 			System.err.println(table() + " - deleteBy(Map<Object, Object> fields) 도중 에러");
@@ -892,5 +906,34 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		return total;
 		
 	}
+	
+	/**
+	 * SQL 로그
+	 * @param sql
+	 */
+	public void log(String sql) {
+		if( Config.sqlLog ) {
+			System.out.println("[SQL] - alcl.jdbc");
+            System.out.println("==================================================");
+            System.out.println(sql);
+            System.out.println("==================================================");
+		}
+	}
+	
+	public void log(StringBuilder sql) {
+		if( Config.sqlLog ) {
+			System.out.println("[SQL] - alcl.jdbc");
+			System.out.println("==================================================");
+			System.out.println(sql.toString());
+			System.out.println("==================================================");
+		}
+	}
 
 }
+
+
+
+
+
+
+
