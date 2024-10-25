@@ -23,7 +23,7 @@ public class Config {
             username = prop.getProperty("db.username");
             password = prop.getProperty("db.password");
             mapUnderscoreToCamelCase = Boolean.parseBoolean(prop.getProperty("mapUnderscoreToCamelCase", "false"));
-            mapCamelCaseToUnderscore = Boolean.parseBoolean(prop.getProperty("mapCa	melCaseToUnderscore", "false"));
+            mapCamelCaseToUnderscore = Boolean.parseBoolean(prop.getProperty("mapCamelCaseToUnderscore", "false"));
             autoCommit = Boolean.parseBoolean(prop.getProperty("autoCommit", "true"));
         } catch (Exception ex) {
             ex.printStackTrace();
