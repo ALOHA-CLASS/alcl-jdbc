@@ -580,18 +580,18 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
         for (Field field : fields) {
             field.setAccessible(true);
             Object value = field.get(entity);
-            if (field.getName().equals(pk())) {
+            // mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
+            String fieldName = field.getName();
+            if(Config.mapCamelCaseToUnderscore) {
+            	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+            }
+            if (fieldName.equals(pk())) {
                 pkValue = value;
                 continue;
             }
             if (value != null) {
                 if (!first) {
                     sql.append(", ");
-                }
-                // mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
-                String fieldName = field.getName();
-                if(Config.mapCamelCaseToUnderscore) {
-                	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
                 }
                 sql.append(fieldName).append(" = ?");
                 first = false;
@@ -651,7 +651,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
                 psmt.setObject(index, pkValue);
             }
             
-            log(sql, param);
+            log(sql, param, pkValue.toString());
             
             result = psmt.executeUpdate();
         } catch (Exception e) {
@@ -679,6 +679,10 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 				Field field = fieldMap.get(fieldName);
 				field.setAccessible(true);
 				Object value = field.get(entity);
+				// mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
+	            if(Config.mapCamelCaseToUnderscore) {
+	            	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+	            }
 				if (value != null) {
 					if (!first) {
 						sql.append(", ");
@@ -753,7 +757,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 				psmt.setObject(index, pkValue);
 			}
 			
-			log(sql);
+			log(sql, param, pkValue.toString());
 			
 			result = psmt.executeUpdate();
 		} catch (Exception e) {
@@ -941,6 +945,17 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
             System.out.println(sql);
             System.out.println(param.toString());
             System.out.println("==================================================");
+		}
+	}
+	
+	public void log(StringBuilder sql, StringBuilder param, String pk) {
+		if( Config.sqlLog ) {
+			System.out.println("[SQL] - alcl.jdbc");
+			System.out.println("==================================================");
+			System.out.println(sql);
+			System.out.println(param.toString());
+			System.out.println("pk - " + pk() + " : " + pk);
+			System.out.println("==================================================");
 		}
 	}
 
