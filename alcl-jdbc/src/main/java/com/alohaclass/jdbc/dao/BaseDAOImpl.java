@@ -602,6 +602,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
             psmt = con.prepareStatement(sql.toString());
             int index = 1;
 
+            StringBuilder param = new StringBuilder("param (?) : ");
             for (Field field : fields) {
                 field.setAccessible(true);
                 Object value = field.get(entity);
@@ -609,6 +610,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
                     continue;
                 }
                 if (value != null) {
+                	param.append("(" + index + ")" + value.toString() + " ");
                     if (value instanceof String) {
                         psmt.setString(index++, (String) value);
                     } else if (value instanceof Boolean) {
@@ -630,6 +632,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
             }
 
             // WHERE pk = ? <-- 조건 값 지정
+            param.append("(" + index + ")" + pkValue.toString() + " ");
             if (pkValue instanceof String) {
                 psmt.setString(index, (String) pkValue);
             } else if (pkValue instanceof Boolean) {
@@ -648,7 +651,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
                 psmt.setObject(index, pkValue);
             }
             
-            log(sql);
+            log(sql, param);
             
             result = psmt.executeUpdate();
         } catch (Exception e) {
@@ -657,6 +660,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
         }
         return result;
     }
+
 
 	@Override
 	public int update(T entity, String... fields) throws Exception {
@@ -694,7 +698,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		try {
 			psmt = con.prepareStatement(sql.toString());
 			int index = 1;
-
+			StringBuilder param = new StringBuilder("param (?) : ");
 			for (String fieldName : fields) {
 				if (fieldMap.containsKey(fieldName)) {
 					Field field = fieldMap.get(fieldName);
@@ -704,6 +708,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 						continue;
 					}
 					if (value != null) {
+						param.append("(" + index + ")" + value.toString() + " ");
 						if (value instanceof String) {
 							psmt.setString(index++, (String) value);
 						} else if (value instanceof Boolean) {
@@ -729,6 +734,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			Object pkValue = pkField.get(entity);;
 
 			// WHERE pk = ? <-- 조건 값 지정
+			param.append("(" + index + ")" + pkValue.toString() + " ");
 			if (pkValue instanceof String) {
 				psmt.setString(index, (String) pkValue);
 			} else if (pkValue instanceof Boolean) {
@@ -829,7 +835,6 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 					psmt.setObject(index++, value);
 				}
 			}
-			
 			log(sql);
 			
 			result = psmt.executeUpdate();
@@ -926,6 +931,16 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			System.out.println("==================================================");
 			System.out.println(sql.toString());
 			System.out.println("==================================================");
+		}
+	}
+	
+	public void log(StringBuilder sql, StringBuilder param) {
+		if( Config.sqlLog ) {
+			System.out.println("[SQL] - alcl.jdbc");
+            System.out.println("==================================================");
+            System.out.println(sql);
+            System.out.println(param.toString());
+            System.out.println("==================================================");
 		}
 	}
 
