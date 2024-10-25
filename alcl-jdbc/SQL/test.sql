@@ -5,3 +5,7 @@ CREATE TABLE test (
 	`age`  INT NULL DEFAULT 1,
 	`main_title` TEXT NULL
 );
+
+SELECT *
+FROM test
+;

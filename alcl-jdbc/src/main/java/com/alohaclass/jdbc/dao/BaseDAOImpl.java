@@ -637,6 +637,10 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
             } else {
                 psmt.setObject(index, pkValue);
             }
+            System.out.println("[SQL] - alcl.jdbc");
+            System.out.println("==================================================");
+            System.out.println(sql);
+            System.out.println("==================================================");
             result = psmt.executeUpdate();
         } catch (Exception e) {
             System.err.println(table() + " - update(entity) 도중 에러");
@@ -733,6 +737,10 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			} else {
 				psmt.setObject(index, pkValue);
 			}
+			System.out.println("[SQL] - alcl.jdbc");
+            System.out.println("==================================================");
+            System.out.println(sql);
+            System.out.println("==================================================");
 			result = psmt.executeUpdate();
 		} catch (Exception e) {
 			System.err.println(table() + " - update(entity, String...) 도중 에러");

@@ -9,7 +9,7 @@
 	test.setNo(1);
 	test.setName("aloha");
 	test.setAge(20);
-	test.setMainTitle("11111");
+	test.setMainTitle("12321312321321수정....");
 	
 	TestService testService = new TestServiceImpl();
 	int result = testService.update(test);
@@ -24,6 +24,7 @@
 	<h1>alcl-jdbcl 라이브러리</h1>
 	<h3>mapUnderscoreToCamelCase : <%= Config.mapUnderscoreToCamelCase %></h3>
 	<h3>mapCamelCaseToUnderscore : <%= Config.mapCamelCaseToUnderscore %></h3>
+	<h3>Auto Commit : <%= Config.autoCommit %></h3>
 	<h3>result : <%= result %></h3>	
 </body>
 </html>

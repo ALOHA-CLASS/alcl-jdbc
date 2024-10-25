@@ -7,6 +7,10 @@ import java.util.Properties;
 public class Config {
     public static boolean mapUnderscoreToCamelCase = false;
     public static boolean mapCamelCaseToUnderscore = false;
+    public static boolean autoCommit = true;
+    public static String url = null;
+    public static String username = null;
+    public static String password = null;
    
     static {
         try (InputStream input = Config.class.getClassLoader().getResourceAsStream("db.properties")) {
@@ -15,8 +19,12 @@ public class Config {
                 System.out.println("Sorry, unable to find db.properties");
             }
             prop.load(input);
+            url = prop.getProperty("db.url");
+            username = prop.getProperty("db.username");
+            password = prop.getProperty("db.password");
             mapUnderscoreToCamelCase = Boolean.parseBoolean(prop.getProperty("mapUnderscoreToCamelCase", "false"));
-            mapCamelCaseToUnderscore = Boolean.parseBoolean(prop.getProperty("mapCamelCaseToUnderscore", "false"));
+            mapCamelCaseToUnderscore = Boolean.parseBoolean(prop.getProperty("mapCa	melCaseToUnderscore", "false"));
+            autoCommit = Boolean.parseBoolean(prop.getProperty("autoCommit", "true"));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
