@@ -606,7 +606,12 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
             for (Field field : fields) {
                 field.setAccessible(true);
                 Object value = field.get(entity);
-                if (field.getName().equals(pk())) {
+                // mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
+                String fieldName = field.getName();
+                if(Config.mapCamelCaseToUnderscore) {
+                	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+                }
+                if (fieldName.equals(pk())) {
                     continue;
                 }
                 if (value != null) {
@@ -708,6 +713,10 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 					Field field = fieldMap.get(fieldName);
 					field.setAccessible(true);
 					Object value = field.get(entity);
+					// mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
+	                if(Config.mapCamelCaseToUnderscore) {
+	                	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+	                }
 					if (field.getName().equals(pk())) {
 						continue;
 					}
