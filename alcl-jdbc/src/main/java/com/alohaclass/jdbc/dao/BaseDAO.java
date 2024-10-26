@@ -111,7 +111,26 @@ public interface BaseDAO<T> {
 	 * @return
 	 * @throws Exception
 	 */
-	int insert(T entity, String... fields) throws Exception;
+	int insert(T entity, String... fieldNames) throws Exception;
+	
+	/**
+	 * insertKey
+	 * - insert 후, 생성된 key 를 객체에 지정하여 반환
+	 * @param entity
+	 * @return
+	 * @throws Exception
+	 */
+	T insertKey(T entity)  throws Exception;
+	
+	/**
+	 * insertKey
+	 * - 지정한 필드만 insert, 생성된 key 를 객체에 지정하여 반환
+	 * @param entity
+	 * @param fields
+	 * @return
+	 * @throws Exception
+	 */
+	T insertKey(T entity, String... fieldNames)  throws Exception;
 	
 	/**
 	 * update

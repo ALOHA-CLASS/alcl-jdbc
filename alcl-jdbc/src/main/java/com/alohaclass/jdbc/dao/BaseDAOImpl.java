@@ -2,6 +2,7 @@ package com.alohaclass.jdbc.dao;
 
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -566,8 +567,190 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
         }
         return result;
     }
+    
+    
+    
+    
 
     @Override
+	public T insertKey(T entity) throws Exception {
+    	int result = 0;
+        StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
+        StringBuilder placeholders = new StringBuilder(" VALUES (");
+        
+        Field[] fields = entity.getClass().getDeclaredFields();
+        boolean first = true;
+
+        for (Field field : fields) {
+            field.setAccessible(true);
+            Object value = field.get(entity);
+
+            if (value != null && !isDefaultValue(value)) {
+                if (!first) {
+                    sql.append(", ");
+                    placeholders.append(", ");
+                }
+				String fieldName = field.getName();
+				// mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
+				// System.out.println("Config.mapCamelCaseToUnderscore : " + Config.mapCamelCaseToUnderscore);
+				if (Config.mapCamelCaseToUnderscore) {
+					fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+				}
+                sql.append(fieldName);
+                placeholders.append("?");
+                first = false;
+            }
+        }
+
+        sql.append(") ");
+        placeholders.append(")");
+        sql.append(placeholders.toString());
+        
+        try {
+        	psmt = con.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
+            int index = 1;
+
+            for (Field field : fields) {
+                field.setAccessible(true);
+                Object value = field.get(entity);
+
+                if (value != null && !isDefaultValue(value)) {
+                    if (value instanceof String) {
+                        psmt.setString(index++, (String) value);
+                    } else if (value instanceof Boolean) {
+                        psmt.setBoolean(index++, (Boolean) value);
+                    } else if (value instanceof Long) {
+                        psmt.setLong(index++, (Long) value);
+                    } else if (value instanceof Integer) {
+                        psmt.setInt(index++, (Integer) value);
+                    } else if (value instanceof Date) {
+                        psmt.setDate(index++, new java.sql.Date(((Date) value).getTime()));
+                    } else {
+                        psmt.setObject(index++, value);
+                    }
+                }
+            }
+            log(sql);
+            result = psmt.executeUpdate();
+        } catch (Exception e) {
+            System.err.println(table() + " - insert(entity) 도중 에러");
+            e.printStackTrace();
+        }
+        // AUTO_INCREMENT key(INT, BIGINT)
+        Long genKey = 0L;
+		try (ResultSet generatedKeys = psmt.getGeneratedKeys()) {
+			if (generatedKeys.next()) {
+				genKey = generatedKeys.getLong(1);
+				Field pkField = entity.getClass().getDeclaredField(pk());
+				pkField.setAccessible(true);
+				if (pkField.getType().equals(Long.class) || pkField.getType().equals(long.class)) {
+					pkField.set(entity, genKey);
+				} else if (pkField.getType().equals(Integer.class) || pkField.getType().equals(int.class)) {
+					pkField.set(entity, genKey.intValue());
+				} else if (pkField.getType().equals(String.class)) {
+					pkField.set(entity, genKey.toString());
+				} else {
+					pkField.set(entity, genKey);
+				}
+				System.out.println("genKey : " + genKey);
+			}
+		} catch (Exception e) {
+			System.err.println(table() + " - insertKey(entity) 도중 에러");
+			e.printStackTrace();
+		}
+        return entity;
+	}
+    
+    
+	@Override
+	public T insertKey(T entity, String... fieldNames) throws Exception {
+		int result = 0;
+        StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
+        StringBuilder placeholders = new StringBuilder(" VALUES (");
+
+        Map<String, Field> fieldMap = new HashMap<>();
+        for (Field field : entity.getClass().getDeclaredFields()) {
+            fieldMap.put(field.getName(), field);
+        }
+
+        boolean first = true;
+        for (String fieldName : fieldNames) {
+            if (fieldMap.containsKey(fieldName)) {
+                if (!first) {
+                    sql.append(", ");
+                    placeholders.append(", ");
+                }
+				// mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
+				// if (Config.mapCamelCaseToUnderscore) {
+				//	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+				// }
+                sql.append(fieldName);
+                placeholders.append("?");
+                first = false;
+            }
+        }
+
+        sql.append(") ");
+        placeholders.append(")");
+        sql.append(placeholders.toString());
+
+        try {
+        	psmt = con.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
+            int index = 1;
+
+            for (String fieldName : fieldNames) {
+                if (fieldMap.containsKey(fieldName)) {
+                    Field field = fieldMap.get(fieldName);
+                    field.setAccessible(true);
+                    Object value = field.get(entity);
+
+                    if (value instanceof String) {
+                        psmt.setString(index++, (String) value);
+                    } else if (value instanceof Boolean) {
+                        psmt.setBoolean(index++, (Boolean) value);
+                    } else if (value instanceof Long) {
+                        psmt.setLong(index++, (Long) value);
+                    } else if (value instanceof Date) {
+                        psmt.setDate(index++, new java.sql.Date(((Date) value).getTime()));
+                    } else {
+                        psmt.setObject(index++, value);
+                    }
+                }
+            }
+            log(sql);
+            result = psmt.executeUpdate();
+        } catch (Exception e) {
+            System.err.println(table() + " - insert(entity, String...) 도중 에러");
+            e.printStackTrace();
+        }
+        
+        // AUTO_INCREMENT key(INT, BIGINT)
+        Long genKey = 0L;
+		try (ResultSet generatedKeys = psmt.getGeneratedKeys()) {
+			if (generatedKeys.next()) {
+				genKey = generatedKeys.getLong(1);
+				Field pkField = entity.getClass().getDeclaredField(pk());
+				pkField.setAccessible(true);
+				if (pkField.getType().equals(Long.class) || pkField.getType().equals(long.class)) {
+					pkField.set(entity, genKey);
+				} else if (pkField.getType().equals(Integer.class) || pkField.getType().equals(int.class)) {
+					pkField.set(entity, genKey.intValue());
+				} else if (pkField.getType().equals(String.class)) {
+					pkField.set(entity, genKey.toString());
+				} else {
+					pkField.set(entity, genKey);
+				}
+				System.out.println("genKey : " + genKey);
+			}
+		} catch (Exception e) {
+			System.err.println(table() + " - insertKey(entity) 도중 에러");
+			e.printStackTrace();
+		}
+        return entity;
+	}
+	
+	
+	@Override
     public int update(T entity) throws Exception {
         int result = 0;
         StringBuilder sql = new StringBuilder("UPDATE " + table() + " SET ");

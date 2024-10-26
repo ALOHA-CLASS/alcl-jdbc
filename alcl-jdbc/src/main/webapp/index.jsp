@@ -13,6 +13,19 @@
 	
 	TestService testService = new TestServiceImpl();
 	int result = testService.update(test);
+	
+	//
+	Test test2= new Test();	
+	test2.setName("aloha");
+	test2.setAge(20);
+	test2.setMainTitle("제목 입니다....");
+	
+	
+	test2 = testService.insertKey(test2);
+	
+	
+	
+	
 %>
 <!DOCTYPE html>
 <html>
@@ -26,5 +39,8 @@
 	<h3>mapCamelCaseToUnderscore : <%= Config.mapCamelCaseToUnderscore %></h3>
 	<h3>Auto Commit : <%= Config.autoCommit %></h3>
 	<h3>result : <%= result %></h3>	
+	<p>
+		<%= test2.toString() %>
+	</p>
 </body>
 </html>

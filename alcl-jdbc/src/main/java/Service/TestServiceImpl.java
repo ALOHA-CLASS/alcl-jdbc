@@ -76,6 +76,18 @@ public class TestServiceImpl implements TestService {
 		}
 		return result;
 	}
+	
+	@Override
+	public Test insertKey(Test test) {
+		try {
+			test = testDAO.insertKey(test);
+			System.out.println(test);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return test;
+	}
+
 
 	@Override
 	public int update(Test test) {
@@ -99,6 +111,7 @@ public class TestServiceImpl implements TestService {
 		return result;
 	}
 
+	
 	
 
 }
