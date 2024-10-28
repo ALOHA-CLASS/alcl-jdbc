@@ -421,7 +421,267 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
         }
         return null;
     }
+	
 
+	/**
+	 * IN 조건 값들을 '' 로 묶어서 반환
+	 * @param col
+	 * @param fields
+	 * @return
+	 */
+	private String getInCondition(String col, String fields) {
+		if (fields == null || fields.isEmpty()) {
+			return "";
+		}
+		if (!fields.contains(",")) {
+			return "AND " + col + " IN ( '" + fields + "' ) ";
+		}
+		String[] fieldArray = fields.split(",");
+		StringBuilder formattedFields = new StringBuilder();
+		for (String field : fieldArray) {
+			if (formattedFields.length() > 0) {
+				formattedFields.append(", ");
+			}
+			formattedFields.append("'").append(field.trim()).append("'");
+		}
+		return "AND " + col + " IN ( " + formattedFields.toString() + " ) ";
+	}
+	
+	
+	private String getInConditions(String col, String... fields) {
+		if (fields == null || fields.length == 0) {
+			return "";
+		}
+		StringBuilder formattedFields = new StringBuilder();
+		for (String field : fields) {
+			if (formattedFields.length() > 0) {
+				formattedFields.append(", ");
+			}
+			formattedFields.append("'").append(field.trim()).append("'");
+		}
+		return "AND " + col + " IN ( " + formattedFields.toString() + " ) ";
+	}
+	
+	private String getInConditions(String col, List<String> fieldList) {
+		if (fieldList == null || fieldList.isEmpty()) {
+			return "";
+		}
+		StringBuilder formattedFields = new StringBuilder();
+		for (String field : fieldList) {
+			if (formattedFields.length() > 0) {
+				formattedFields.append(", ");
+			}
+			formattedFields.append("'").append(field.trim()).append("'");
+		}
+		return "AND " + col + " IN ( " + formattedFields.toString() + " ) ";
+	}
+
+	@Override
+	public List<T> in(String col, String fields) throws Exception {
+		String IN = getInCondition(col, fields);
+		String sql = " SELECT * "
+				   + " FROM " + table()
+				   + " WHERE 1=1 "
+				   + IN ;
+		
+		List<T> list = new ArrayList<T>();
+		try {
+			psmt = con.prepareStatement(sql);
+			log(sql);
+			rs = psmt.executeQuery();
+			while( rs.next() ) {
+				T entity = map(rs);
+				list.add(entity);
+			}
+		} catch (Exception e) {
+			System.err.println(table() + " - inaAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
+			e.printStackTrace();
+		}
+		return list;
+	}
+	
+	
+	@Override
+	public List<T> in(String col, String... field) throws Exception {
+		String IN = getInConditions(col, field);
+		String sql = " SELECT * "
+				   + " FROM " + table()
+				   + " WHERE 1=1 "
+				   + IN ;
+		
+		List<T> list = new ArrayList<T>();
+		try {
+			psmt = con.prepareStatement(sql);
+			log(sql);
+			rs = psmt.executeQuery();
+			while( rs.next() ) {
+				T entity = map(rs);
+				list.add(entity);
+			}
+		} catch (Exception e) {
+			System.err.println(table() + " - inaAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
+			e.printStackTrace();
+		}
+		return list;
+	}
+	
+	@Override
+	public List<T> in(String col, List<String> fieldList) throws Exception {
+		String IN = getInConditions(col, fieldList);
+		String sql = " SELECT * "
+				   + " FROM " + table()
+				   + " WHERE 1=1 "
+				   + IN ;
+		
+		List<T> list = new ArrayList<T>();
+		try {
+			psmt = con.prepareStatement(sql);
+			log(sql);
+			rs = psmt.executeQuery();
+			while( rs.next() ) {
+				T entity = map(rs);
+				list.add(entity);
+			}
+		} catch (Exception e) {
+			System.err.println(table() + " - inaAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
+			e.printStackTrace();
+		}
+		return list;
+	}
+	
+	
+	@Override
+	public PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, String fields) throws Exception {
+		Page page = pageInfo.getPage();
+		if( page == null || page.getTotal() == 0 ) {
+			int total = count(pageInfo);
+			if( page == null ) page = new Page();
+			page.setTotal(total);
+		}
+		String searchCondition = getSearchOptions(pageInfo.getSearchOptions());
+		int searchCounditionCount = pageInfo.getSearchOptions().size();
+		
+		String IN = getInCondition(col, fields);
+		String sql = " SELECT * "
+				   + " FROM " + table()
+				   + " WHERE 1=1 "
+				   + IN 
+				   + " AND   ( "
+				   + searchCondition
+				   + "       )"
+				   + " LIMIT ?, ? ";
+		
+		List<T> list = new ArrayList<T>();
+		try {
+			psmt = con.prepareStatement(sql);
+			int index = 1;
+			for (int i = 0; i < searchCounditionCount; i++) {
+				psmt.setString(index++, pageInfo.getKeyword());
+			}
+			psmt.setInt(index++, page.getIndex());
+			psmt.setInt(index++, page.getSize());
+			log(sql);
+			rs = psmt.executeQuery();
+			while( rs.next() ) {
+				T entity = map(rs);
+				list.add(entity);
+			}
+			pageInfo.setPage(page);
+			pageInfo.setList(list);
+		} catch (Exception e) {
+			System.err.println(table() + " - inaAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
+			e.printStackTrace();
+		}
+		return pageInfo;
+	}
+	@Override
+	public PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, String... field) throws Exception {
+		Page page = pageInfo.getPage();
+		if( page == null || page.getTotal() == 0 ) {
+			int total = count(pageInfo);
+			if( page == null ) page = new Page();
+			page.setTotal(total);
+		}
+		String searchCondition = getSearchOptions(pageInfo.getSearchOptions());
+		int searchCounditionCount = pageInfo.getSearchOptions().size();
+		
+		String IN = getInConditions(col, field);
+		String sql = " SELECT * "
+				   + " FROM " + table()
+				   + " WHERE 1=1 "
+				   + IN 
+				   + " AND   ( "
+				   + searchCondition
+				   + "       )"
+				   + " LIMIT ?, ? ";
+		
+		List<T> list = new ArrayList<T>();
+		try {
+			psmt = con.prepareStatement(sql);
+			int index = 1;
+			for (int i = 0; i < searchCounditionCount; i++) {
+				psmt.setString(index++, pageInfo.getKeyword());
+			}
+			psmt.setInt(index++, page.getIndex());
+			psmt.setInt(index++, page.getSize());
+			log(sql);
+			rs = psmt.executeQuery();
+			while( rs.next() ) {
+				T entity = map(rs);
+				list.add(entity);
+			}
+			pageInfo.setPage(page);
+			pageInfo.setList(list);
+		} catch (Exception e) {
+			System.err.println(table() + " - inaAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
+			e.printStackTrace();
+		}
+		return pageInfo;
+	}
+	@Override
+	public PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, List<String> fieldList) throws Exception {
+		Page page = pageInfo.getPage();
+		if( page == null || page.getTotal() == 0 ) {
+			int total = count(pageInfo);
+			if( page == null ) page = new Page();
+			page.setTotal(total);
+		}
+		String searchCondition = getSearchOptions(pageInfo.getSearchOptions());
+		int searchCounditionCount = pageInfo.getSearchOptions().size();
+		
+		String IN = getInConditions(col, fieldList);
+		String sql = " SELECT * "
+				   + " FROM " + table()
+				   + " WHERE 1=1 "
+				   + IN 
+				   + " AND   ( "
+				   + searchCondition
+				   + "       )"
+				   + " LIMIT ?, ? ";
+		
+		List<T> list = new ArrayList<T>();
+		try {
+			psmt = con.prepareStatement(sql);
+			int index = 1;
+			for (int i = 0; i < searchCounditionCount; i++) {
+				psmt.setString(index++, pageInfo.getKeyword());
+			}
+			psmt.setInt(index++, page.getIndex());
+			psmt.setInt(index++, page.getSize());
+			log(sql);
+			rs = psmt.executeQuery();
+			while( rs.next() ) {
+				T entity = map(rs);
+				list.add(entity);
+			}
+			pageInfo.setPage(page);
+			pageInfo.setList(list);
+		} catch (Exception e) {
+			System.err.println(table() + " - inaAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
+			e.printStackTrace();
+		}
+		return pageInfo;
+	}
 	@Override
 	public int insert(T entity) throws Exception {
         int result = 0;

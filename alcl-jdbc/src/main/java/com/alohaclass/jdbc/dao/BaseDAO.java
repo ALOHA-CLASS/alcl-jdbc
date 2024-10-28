@@ -94,6 +94,15 @@ public interface BaseDAO<T> {
 	 */
 	T where(Map<Object, Object> fields) throws Exception;
 	
+	
+	List<T> in(String col, String fields) throws Exception;
+	List<T> in(String col, String... field) throws Exception;
+	List<T> in(String col, List<String> fieldList) throws Exception;
+	
+	PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, String fields) throws Exception;
+	PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, String... field) throws Exception;
+	PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, List<String> fieldList) throws Exception;
+	
 	/**
 	 * insert
 	 * - null 이 아닌 필드만 insert
