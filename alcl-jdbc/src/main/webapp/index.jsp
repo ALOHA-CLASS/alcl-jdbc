@@ -1,3 +1,7 @@
+<%@page import="DTO.Board"%>
+<%@page import="java.util.List"%>
+<%@page import="Service.BoardServiceImpl"%>
+<%@page import="Service.BoardService"%>
 <%@page import="Service.TestServiceImpl"%>
 <%@page import="Service.TestService"%>
 <%@page import="DTO.Test"%>
@@ -23,7 +27,11 @@
 	
 	test2 = testService.insertKey(test2);
 	
-	
+	// Board
+	BoardService boardService = new BoardServiceImpl();
+    List<Board> list = boardService.list();
+    Board board = boardService.select(1);
+    
 	
 	
 %>

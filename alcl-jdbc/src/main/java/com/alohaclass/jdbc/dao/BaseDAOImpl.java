@@ -1,6 +1,7 @@
 package com.alohaclass.jdbc.dao;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -9,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.alohaclass.jdbc.annotation.Pk;
+import com.alohaclass.jdbc.annotation.Table;
 import com.alohaclass.jdbc.config.Config;
 import com.alohaclass.jdbc.dto.Page;
 import com.alohaclass.jdbc.dto.PageInfo;
@@ -16,10 +19,66 @@ import com.alohaclass.jdbc.utils.StringUtil;
 
 public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T> {
 
-	public abstract String table();
-    public abstract String pk();
-    public abstract T map(ResultSet rs) throws Exception;
+	
+	public String table() {
+		// 제네릭 타입 T의 실제 클래스 얻기
+		Class<T> clazz = getGenericType();
 
+        // 어노테이션에서 테이블 이름 추출
+        if (clazz.isAnnotationPresent(Table.class)) {
+            Table table = clazz.getAnnotation(Table.class);
+            return table.value();
+        }
+
+        throw new IllegalStateException("클래스 " + clazz.getSimpleName() + "에 @Table 어노테이션이 없습니다.");
+	}
+	
+    public String pk() {
+    	Class<T> clazz = getGenericType();
+        for (Field field : clazz.getDeclaredFields()) {
+            if (field.isAnnotationPresent(Pk.class)) {
+                return field.getName();
+            }
+        }
+        throw new IllegalStateException("클래스 " + clazz.getSimpleName() + "에 @Pk 필드가 없습니다.");
+    }
+    
+    @SuppressWarnings("unchecked")
+    private Class<T> getGenericType() {
+        return (Class<T>) ((ParameterizedType) getClass()
+                .getGenericSuperclass())
+                .getActualTypeArguments()[0];
+    }
+    
+    public T map(ResultSet rs) throws Exception {
+		Class<?> clazz = this.getClass();
+		T entity = (T) clazz.newInstance();
+		Field[] fields = clazz.getDeclaredFields();
+		for (Field field : fields) {
+			field.setAccessible(true);
+			String fieldName = field.getName();
+			if (Config.mapCamelCaseToUnderscore) {
+				fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+			}
+			if (field.getType().equals(String.class)) {
+				field.set(entity, rs.getString(fieldName));
+			} else if (field.getType().equals(Boolean.class) || field.getType().equals(boolean.class)) {
+				field.set(entity, rs.getBoolean(fieldName));
+			} else if (field.getType().equals(Long.class) || field.getType().equals(long.class)) {
+				field.set(entity, rs.getLong(fieldName));
+			} else if (field.getType().equals(Integer.class) || field.getType().equals(int.class)) {
+				field.set(entity, rs.getInt(fieldName));
+			} else if (field.getType().equals(Date.class)) {
+				field.set(entity, rs.getDate(fieldName));
+			} else if (field.getType().equals(Double.class) || field.getType().equals(double.class)) {
+				field.set(entity, rs.getDouble(fieldName));
+			} else if (field.getType().equals(Float.class) || field.getType().equals(float.class)) {
+				field.set(entity, rs.getFloat(fieldName));
+			}
+		}
+		return entity;
+    }
+	
     
 	@Override
 	public List<T> list() throws Exception {
@@ -336,6 +395,9 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 				   + " FROM " + table()
 				   + " WHERE " + pk() + " = ? "
 				   ;
+		StringBuilder sb = new StringBuilder(sql);
+		StringBuilder param = new StringBuilder("param (?) : ");
+		param.append("(" + 1 + ")" + pk.toString() + " ");
 		try {
 			psmt = con.prepareStatement(sql);
 			System.out.println("pk : " + pk);
@@ -354,7 +416,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			} else {
 				psmt.setObject(1, pk);
 			}
-			log(sql);
+			log(sb, param);
 			rs = psmt.executeQuery();
 			if( rs.next() ) {
 				T entity = map(rs);
