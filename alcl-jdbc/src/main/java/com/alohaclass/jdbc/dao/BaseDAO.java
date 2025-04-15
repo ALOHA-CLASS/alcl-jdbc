@@ -10,35 +10,35 @@ import com.alohaclass.jdbc.dto.Page;
 import com.alohaclass.jdbc.dto.PageInfo;
 
 /**
- * BaseDAO
- * - DAO 
+ * BaseDAO - DAO
  */
 public interface BaseDAO<T> {
-	
+
 	// 테이블명
 	String table();
+
 	// PK (no or id)
 	String pk();
-	
+
 	// 매핑
 	T map(ResultSet rs) throws Exception;
-	
-	// 검색옵션 조건 
+
+	// 검색옵션 조건
 //	String getSearchOptions(List<String > searchOptions) throws Exception;
 	default String getSearchOptions(List<String> searchOptions) throws Exception {
-		if( searchOptions == null || searchOptions.size() == 0 ) {
+		if (searchOptions == null || searchOptions.size() == 0) {
 			return "1=1";
 		}
 		String str = "";
 		for (Iterator iterator = searchOptions.iterator(); iterator.hasNext();) {
 			String column = (String) iterator.next();
 			str += (column + " LIKE CONCAT('%', ?, '%') ");
-			if( iterator.hasNext() ) 
+			if (iterator.hasNext())
 				str += " OR ";
 		}
 		return str;
 	}
-	
+
 	// 필터옵션 정렬
 //	String getFilterOptions(Map<String, String> filterOptions) throws Exception;
 	default String getFilterOptions(Map<String, String> filterOptions) throws Exception {
@@ -47,131 +47,140 @@ public interface BaseDAO<T> {
 		for (Iterator iterator = keys.iterator(); iterator.hasNext();) {
 			String key = (String) iterator.next();
 			String value = filterOptions.get(key);
-			str += (key + " " + value);		// title ASC, writer DESC ...
-			if( iterator.hasNext() )
+			str += (key + " " + value); // title ASC, writer DESC ...
+			if (iterator.hasNext())
 				str += ", ";
 		}
 		return str;
 	}
-	
-	
+
 	// 목록
 	List<T> list() throws Exception;
+
 	List<T> listBy(Map<Object, Object> fields) throws Exception;
-	
+
 	// 페이징
 	PageInfo<T> page() throws Exception;
+
 	PageInfo<T> page(PageInfo<T> pageInfo) throws Exception;
+
 	PageInfo<T> page(Page page) throws Exception;
+
 	PageInfo<T> page(Page page, Map<String, String> filterOptions) throws Exception;
+
 	PageInfo<T> page(Page page, String keyword, List<String> searchOptions) throws Exception;
-	PageInfo<T> page(Page page, String keyword, List<String> searchOptions, Map<String, String> filterOptions) throws Exception;
-	
+
+	PageInfo<T> page(Page page, String keyword, List<String> searchOptions, Map<String, String> filterOptions)
+			throws Exception;
+
 	/**
-	 * select 
-	 * - pk 기준으로 조회
+	 * select - pk 기준으로 조회
+	 * 
 	 * @param pk
 	 * @return
 	 * @throws Exception
 	 */
 	T select(Object pk) throws Exception;
-	
+
 	/**
-	 * selectBy 
-	 * - 1개 이상의 필드를 기준으로 조회
+	 * selectBy - 1개 이상의 필드를 기준으로 조회
+	 * 
 	 * @param fields
 	 * @return
 	 * @throws Exception
 	 */
 	T selectBy(Map<Object, Object> fields) throws Exception;
-	
+
 	/**
-	 * where == selectBy
-	 * - 이름만 쉽게
+	 * where == selectBy - 이름만 쉽게
+	 * 
 	 * @param fields
 	 * @return
 	 * @throws Exception
 	 */
 	T where(Map<Object, Object> fields) throws Exception;
-	
-	
+
 	List<T> in(String col, String fields) throws Exception;
+
 	List<T> in(String col, String... field) throws Exception;
+
 	List<T> in(String col, List<String> fieldList) throws Exception;
-	
+
 	PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, String fields) throws Exception;
+
 	PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, String... field) throws Exception;
+
 	PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, List<String> fieldList) throws Exception;
-	
+
 	/**
-	 * insert
-	 * - null 이 아닌 필드만 insert
+	 * insert - null 이 아닌 필드만 insert
+	 * 
 	 * @param entity
 	 * @return
 	 * @throws Exception
 	 */
 	int insert(T entity) throws Exception;
-	
+
 	/**
-	 * insert
-	 * - 지정한 필드만 insert
+	 * insert - 지정한 필드만 insert
+	 * 
 	 * @param entity
 	 * @param fields
 	 * @return
 	 * @throws Exception
 	 */
 	int insert(T entity, String... fieldNames) throws Exception;
-	
+
 	/**
-	 * insertKey
-	 * - insert 후, 생성된 key 를 객체에 지정하여 반환
+	 * insertKey - insert 후, 생성된 key 를 객체에 지정하여 반환
+	 * 
 	 * @param entity
 	 * @return
 	 * @throws Exception
 	 */
-	T insertKey(T entity)  throws Exception;
-	
+	T insertKey(T entity) throws Exception;
+
 	/**
-	 * insertKey
-	 * - 지정한 필드만 insert, 생성된 key 를 객체에 지정하여 반환
+	 * insertKey - 지정한 필드만 insert, 생성된 key 를 객체에 지정하여 반환
+	 * 
 	 * @param entity
 	 * @param fields
 	 * @return
 	 * @throws Exception
 	 */
-	T insertKey(T entity, String... fieldNames)  throws Exception;
-	
+	T insertKey(T entity, String... fieldNames) throws Exception;
+
 	/**
-	 * update
-	 * - pk 조건으로 update
+	 * update - pk 조건으로 update
+	 * 
 	 * @param entity
 	 * @return
 	 * @throws Exception
 	 */
 	int update(T entity) throws Exception;
-	
+
 	/**
-	 * update
-	 * - 지정한 필드만 update
+	 * update - 지정한 필드만 update
+	 * 
 	 * @param entity
 	 * @param fields
 	 * @return
 	 * @throws Exception
 	 */
 	int update(T entity, String... fields) throws Exception;
-	
+
 	/**
-	 * delete
-	 * - pk 를 기준으로 delete
+	 * delete - pk 를 기준으로 delete
+	 * 
 	 * @param entity
 	 * @return
 	 * @throws Exception
 	 */
 	int delete(Object pk) throws Exception;
-	
+
 	/**
-	 * delete
-	 * - 1개 이상의 필드를 기준으로 삭제
+	 * delete - 1개 이상의 필드를 기준으로 삭제
+	 * 
 	 * @param fields
 	 * @return
 	 * @throws Exception
@@ -179,36 +188,30 @@ public interface BaseDAO<T> {
 	int deleteBy(Map<Object, Object> fields) throws Exception;
 
 	/**
-	 * 개수
-	 * - 전체
+	 * 개수 - 전체
+	 * 
 	 * @return
 	 * @throws Exception
 	 */
 	int count() throws Exception;
-	
+
 	/**
-	 * 개수
-	 * - 페이징(검색) 조건
+	 * 개수 - 페이징(검색) 조건
+	 * 
 	 * @param pageInfo
 	 * @return
 	 * @throws Exception
 	 */
 	int count(PageInfo<T> pageInfo) throws Exception;
-	
+
 	/**
-	 * 개수
-	 * - 검색 조건
+	 * 개수 - 검색 조건
+	 * 
 	 * @param keyword
 	 * @param searchOptions
 	 * @return
 	 * @throws Exception
 	 */
 	int count(String keyword, List<String> searchOptions) throws Exception;
-	
 
 }
-
-
-
-
-
