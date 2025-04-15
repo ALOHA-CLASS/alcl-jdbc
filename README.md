@@ -1,8 +1,9 @@
 # alcl-jdbc
-DAO 자동 CRUD 라이브러리
+ > DAO 자동 CRUD 라이브러리
 
+<br><br><br>
 
-# alcl-jdbc 사용법
+# 👩‍🏫사용법
 
 ## 1. Entity 클래스 생성
 `@Table`과 `@Pk` 어노테이션을 사용하여 엔티티 클래스를 정의합니다. Lombok을 함께 사용하면 편리합니다.
@@ -24,7 +25,7 @@ public class Board {
     private Date updatedAt;
 }
 ```
-
+<br><br><br>
 ## 2. DAO 클래스 생성
 `BaseDAOImpl<T>`를 상속받아 DAO 클래스를 생성하면 CRUD 기능이 자동으로 제공됩니다.
 
@@ -38,7 +39,7 @@ public class BoardDAO extends BaseDAOImpl<Board> {
     // 필요 시 메서드 오버라이드 가능
 }
 ```
-
+<br><br><br>
 ## 3. DAO 사용 예시
 ```java
 BoardDAO boardDAO = new BoardDAO();
@@ -64,7 +65,7 @@ boardDAO.update(board);
 // DELETE
 boardDAO.delete(board);
 ```
-
+<br><br><br>
 ## 4. 기타 기능 (BaseDAO 인터페이스 기준)
 | 메서드 | 설명 |
 |--------|------|
@@ -85,7 +86,7 @@ boardDAO.delete(board);
 | `getSearchOptions(List<String> searchOptions)` | LIKE 검색 쿼리 생성 |
 | `getFilterOptions(Map<String, String> filterOptions)` | ORDER BY 생성 |
 
-
+<br><br><br>
 ## 5. 주의 사항
 - `@Pk`는 반드시 한 개만 선언해야 합니다.
 - `@Table` 이름은 실제 DB 테이블 이름과 일치해야 합니다.
