@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Board extends Entity {
+public class Board {
 
 	@Pk
 	private Long no;

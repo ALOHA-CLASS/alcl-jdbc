@@ -26,7 +26,7 @@ public class JDBConnection {
             // Auto Commit 여부 설정
         	try {
     			con.setAutoCommit(Config.autoCommit);
-    			System.out.println("Auto Commit : " + Config.autoCommit);
+    			// System.out.println("Auto Commit : " + Config.autoCommit);
         	} catch (Exception e) {
         		System.err.println("Auto Commit 설정 실패");
         	}
