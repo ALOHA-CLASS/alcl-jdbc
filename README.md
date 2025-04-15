@@ -55,7 +55,7 @@ Board newBoard = Board.builder()
 boardDAO.insert(newBoard);
 
 // SELECT
-Board board = boardDAO.findById(1L);
+Board board = boardDAO.select(1L);
 
 // UPDATE
 board.setTitle("수정된 제목");
@@ -66,22 +66,25 @@ boardDAO.delete(board);
 ```
 
 ## 4. 기타 기능 (BaseDAO 인터페이스 기준)
-- `list()` : 전체 목록 조회
-- `listBy(Map<Object, Object> fields)` : 특정 조건 목록 조회
-- `page()` 및 오버로딩된 `page(...)` : 페이징 처리 목록 조회
-- `select(Object pk)` : 기본키로 조회
-- `selectBy(Map<Object, Object> fields)` : 조건 기반 단건 조회
-- `insert(T entity)` : 엔티티 저장 (null 제외)
-- `insertKey(T entity)` : 저장 후 PK 값 반환
-- `update(T entity)` : 전체 필드 업데이트
-- `update(T entity, String... fields)` : 일부 필드 업데이트
-- `delete(Object pk)` : PK 기반 삭제
-- `deleteBy(Map<Object, Object> fields)` : 조건 기반 삭제
-- `in(String col, List<String> values)` : IN 조건 목록 조회
-- `count()` : 전체 레코드 수 반환
-- `count(String keyword, List<String> searchOptions)` : 검색 조건 개수
-- `getSearchOptions(List<String> searchOptions)` : LIKE 검색 쿼리 생성
-- `getFilterOptions(Map<String, String> filterOptions)` : ORDER BY 생성
+| 메서드 | 설명 |
+|--------|------|
+| `list()` | 전체 목록 조회 |
+| `listBy(Map<Object, Object> fields)` | 특정 조건 목록 조회 |
+| `page()` 및 `page(...)` (오버로딩) | 페이징 처리 목록 조회 |
+| `select(Object pk)` | 기본키로 조회 |
+| `selectBy(Map<Object, Object> fields)` | 조건 기반 단건 조회 |
+| `insert(T entity)` | 엔티티 저장 (null 제외) |
+| `insertKey(T entity)` | 저장 후 PK 값 반환 |
+| `update(T entity)` | 전체 필드 업데이트 |
+| `update(T entity, String... fields)` | 일부 필드 업데이트 |
+| `delete(Object pk)` | PK 기반 삭제 |
+| `deleteBy(Map<Object, Object> fields)` | 조건 기반 삭제 |
+| `in(String col, List<String> values)` | IN 조건 목록 조회 |
+| `count()` | 전체 레코드 수 반환 |
+| `count(String keyword, List<String> searchOptions)` | 검색 조건 개수 |
+| `getSearchOptions(List<String> searchOptions)` | LIKE 검색 쿼리 생성 |
+| `getFilterOptions(Map<String, String> filterOptions)` | ORDER BY 생성 |
+
 
 ## 5. 주의 사항
 - `@Pk`는 반드시 한 개만 선언해야 합니다.
