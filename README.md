@@ -6,7 +6,12 @@
 # 👩‍🏫사용법
 
 ## 1. Entity 클래스 생성
-`@Table`과 `@Pk` 어노테이션을 사용하여 엔티티 클래스를 정의합니다. Lombok을 함께 사용하면 편리합니다.
+`@Table`과 `@Pk` 어노테이션을 사용하여 엔티티 클래스를 정의합니다. 
+✅ Lombok을 함께 사용하면 편리합니다.
+
+- @Table("board") : 이 클래스가 매핑되는 DB 테이블명 지정
+- @Pk : 기본 키 필드 지정
+- @Column(exist = false) : DB에 컬럼이 존재하지 않는 필드를 나타냄 (예: 비즈니스 로직용 임시 필드)
 
 ```java
 @Table("board")
@@ -23,6 +28,9 @@ public class Board {
     private String content;
     private Date createdAt;
     private Date updatedAt;
+
+    @Column(exist = false)		// 실제 DB 컬럼에 없는 변수
+	   private String test;
 }
 ```
 <br><br><br>
