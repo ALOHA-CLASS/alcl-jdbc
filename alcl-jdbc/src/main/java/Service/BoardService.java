@@ -12,6 +12,7 @@ public interface BoardService {
 	public List<Board> list();
 	public PageInfo<Board> page();
 	public Board select(int no);
+	public Board selectById(String id);
 	public int insert(Board Board);
 	public Board insertKey(Board Board);
 	public int update(Board Board);

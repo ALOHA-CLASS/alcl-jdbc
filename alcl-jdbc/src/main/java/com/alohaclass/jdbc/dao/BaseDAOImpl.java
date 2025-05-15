@@ -51,8 +51,9 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
     }
     
     public T map(ResultSet rs) throws Exception {
-		Class<?> clazz = this.getClass();
-		T entity = (T) clazz.newInstance();
+    	ParameterizedType superclass = (ParameterizedType) getClass().getGenericSuperclass();
+    	Class<T> clazz = (Class<T>) superclass.getActualTypeArguments()[0];
+    	T entity = clazz.getDeclaredConstructor().newInstance();
 		Field[] fields = clazz.getDeclaredFields();
 		for (Field field : fields) {
 			field.setAccessible(true);

@@ -106,6 +106,28 @@ public class BoardServiceImpl implements BoardService {
 			e.printStackTrace();
 		}
 		return result;
+	}
+
+
+	@Override
+	public Board selectById(String id) {
+		Board board = null;
+		try {
+			Map<Object, Object> map = new HashMap<Object, Object>();
+			map.put("id", id);
+			board = boardDAO.selectBy(map);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return board;
 	} 
 
 }
+
+
+
+
+
+
+
+

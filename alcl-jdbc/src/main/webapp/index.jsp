@@ -32,7 +32,7 @@
     List<Board> list = boardService.list();
     Board board = boardService.select(1);
     
-	
+	board = boardService.selectById("3b642e97-315f-11f0-83a9-a8a1596f255e");
 	
 %>
 <!DOCTYPE html>
@@ -49,6 +49,9 @@
 	<h3>result : <%= result %></h3>	
 	<p>
 		<%= test2.toString() %>
+	</p>
+	<p>
+		<%= board.toString() %>
 	</p>
 </body>
 </html>
