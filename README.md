@@ -78,16 +78,16 @@ boardDAO.delete(board);
 | 메서드 | 설명 |
 |--------|------|
 | `list()` | 전체 목록 조회 |
-| `listBy(Map<Object, Object> fields)` | 특정 조건 목록 조회 |
+| `listBy(Map<String, Object> fields)` | 특정 조건 목록 조회 |
 | `page()` 및 `page(...)` (오버로딩) | 페이징 처리 목록 조회 |
 | `select(Object pk)` | 기본키로 조회 |
-| `selectBy(Map<Object, Object> fields)` | 조건 기반 단건 조회 |
+| `selectBy(Map<String, Object> fields)` | 조건 기반 단건 조회 |
 | `insert(T entity)` | 엔티티 저장 (null 제외) |
 | `insertKey(T entity)` | 저장 후 PK 값 반환 |
 | `update(T entity)` | 전체 필드 업데이트 |
 | `update(T entity, String... fields)` | 일부 필드 업데이트 |
 | `delete(Object pk)` | PK 기반 삭제 |
-| `deleteBy(Map<Object, Object> fields)` | 조건 기반 삭제 |
+| `deleteBy(Map<String, Object> fields)` | 조건 기반 삭제 |
 | `in(String col, List<String> values)` | IN 조건 목록 조회 |
 | `count()` | 전체 레코드 수 반환 |
 | `count(String keyword, List<String> searchOptions)` | 검색 조건 개수 |
