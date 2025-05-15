@@ -30,7 +30,7 @@ public class Board {
     private Date updatedAt;
 
     @Column(exist = false)		// 실제 DB 컬럼에 없는 변수
-	   private String test;
+    private String test;
 }
 ```
 <br><br><br>
