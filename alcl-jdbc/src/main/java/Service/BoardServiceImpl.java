@@ -113,7 +113,7 @@ public class BoardServiceImpl implements BoardService {
 	public Board selectById(String id) {
 		Board board = null;
 		try {
-			Map<Object, Object> map = new HashMap<Object, Object>();
+			Map<String, Object> map = new HashMap<String, Object>();
 			map.put("id", id);
 			board = boardDAO.selectBy(map);
 		} catch (Exception e) {

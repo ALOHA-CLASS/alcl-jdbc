@@ -32,7 +32,8 @@
     List<Board> list = boardService.list();
     Board board = boardService.select(1);
     
-	board = boardService.selectById("3b642e97-315f-11f0-83a9-a8a1596f255e");
+	board = boardService.selectById("55432865-3174-11f0-83a9-a8a1596f255e");
+	if( board == null ) board = new Board();
 	
 %>
 <!DOCTYPE html>

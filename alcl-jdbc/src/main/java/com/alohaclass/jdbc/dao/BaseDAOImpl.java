@@ -2,7 +2,9 @@ package com.alohaclass.jdbc.dao;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Date;
@@ -12,6 +14,7 @@ import java.util.Map;
 
 import com.alohaclass.jdbc.annotation.Pk;
 import com.alohaclass.jdbc.annotation.Table;
+import com.alohaclass.jdbc.annotation.Column;
 import com.alohaclass.jdbc.config.Config;
 import com.alohaclass.jdbc.dto.Page;
 import com.alohaclass.jdbc.dto.PageInfo;
@@ -57,6 +60,11 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		Field[] fields = clazz.getDeclaredFields();
 		for (Field field : fields) {
 			field.setAccessible(true);
+			// @Column(exist = false)이면 skip
+			Column annotation = field.getAnnotation(Column.class);
+			if (annotation != null && !annotation.exist()) {
+				continue;
+			}
 			String fieldName = field.getName();
 			if (Config.mapCamelCaseToUnderscore) {
 				fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
@@ -103,56 +111,47 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 	
 
 	@Override
-	public List<T> listBy(Map<Object, Object> fields) throws Exception {
+	public List<T> listBy(Map<String, Object> fields) throws Exception {
 		StringBuilder sql = new StringBuilder("SELECT * FROM " + table() + " WHERE ");
-        boolean first = true;
+		boolean first = true;
 
-        for (Map.Entry<Object, Object> entry : fields.entrySet()) {
-            if (!first) {
-                sql.append(" AND ");
-            }
-            sql.append(entry.getKey()).append(" = ?");
-            first = false;
-        }
+		for (Map.Entry<String, Object> entry : fields.entrySet()) {
+			String fieldName = entry.getKey();
+			if (Config.mapCamelCaseToUnderscore) {
+				fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+			}
+			if (!first) {
+				sql.append(" AND ");
+			}
+			sql.append(fieldName).append(" = ?");
+			first = false;
+		}
 
-        List<T> list = new ArrayList<T>();
-        try {
-            psmt = con.prepareStatement(sql.toString());
+		List<T> list = new ArrayList<>();
+		try {
+			psmt = con.prepareStatement(sql.toString());
 
-            int index = 1;
-            for (Map.Entry<Object, Object> entry : fields.entrySet()) {
-                Object value = entry.getValue();
-                if (value instanceof String) {
-                    psmt.setString(index++, (String) value);
-                } else if (value instanceof Boolean) {
-                    psmt.setBoolean(index++, (Boolean) value);
-                } else if (value instanceof Long) {
-                    psmt.setLong(index++, (Long) value);
-                } else if (value instanceof Integer) {
-                    psmt.setInt(index++, (Integer) value);
-                } else if (value instanceof Double) {
-                    psmt.setDouble(index++, (Double) value);
-                } else if (value instanceof Float) {
-                    psmt.setFloat(index++, (Float) value);
-                } else if (value instanceof Date) {
-                    psmt.setDate(index++, new java.sql.Date(((Date) value).getTime()));
-                } else {
-                    psmt.setObject(index++, value);
-                }
-            }
-            log(sql);
-            rs = psmt.executeQuery();
-            while (rs.next()) {
-                T entity = map(rs);
-                list.add(entity);
-            }
-            return list;
-        } catch (Exception e) {
-            System.err.println(table() + " - listBy(Map<Object, Object> fields) 조회 중 에러");
-            e.printStackTrace();
-        }
-        return null;
+			int index = 1;
+			StringBuilder paramLog = new StringBuilder("param (?) : ");
+			for (Object value : fields.values()) {
+				paramLog.append("(").append(index).append(")").append(value).append(" ");
+				setPreparedStatementValue(psmt, index++, value);
+			}
+
+			log(sql, paramLog);
+			rs = psmt.executeQuery();
+			while (rs.next()) {
+				T entity = map(rs);
+				list.add(entity);
+			}
+			return list;
+		} catch (Exception e) {
+			System.err.println(table() + " - listBy(Map<String, Object> fields) 조회 중 에러");
+			e.printStackTrace();
+		}
+		return null;
 	}
+
 	
 	
 	@Override
@@ -392,98 +391,68 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 
 	@Override
 	public T select(Object pk) throws Exception {
-		String sql = " SELECT * "
-				   + " FROM " + table()
-				   + " WHERE " + pk() + " = ? "
-				   ;
-		StringBuilder sb = new StringBuilder(sql);
-		StringBuilder param = new StringBuilder("param (?) : ");
-		param.append("(" + 1 + ")" + pk.toString() + " ");
+		String sql = "SELECT * FROM " + table() + " WHERE " + pk() + " = ?";
+		StringBuilder param = new StringBuilder("param (?) : (1)").append(pk.toString()).append(" ");
+
 		try {
 			psmt = con.prepareStatement(sql);
-			System.out.println("pk : " + pk);
-			if (pk instanceof String) {
-				psmt.setString(1, (String) pk);
-			} else if (pk instanceof Boolean ) {
-				psmt.setBoolean(1, (Boolean) pk);
-			} else if (pk instanceof Long) {
-				psmt.setLong(1, (Long) pk);
-			} else if (pk instanceof Integer) {
-				psmt.setInt(1, (Integer) pk);
-			} else if (pk instanceof Double) {
-				psmt.setDouble(1, (Double) pk);
-			} else if (pk instanceof Float) {
-				psmt.setFloat(1, (Float) pk);
-			} else {
-				psmt.setObject(1, pk);
-			}
-			log(sb, param);
+			setPreparedStatementValue(psmt, 1, pk);  // 중복 제거
+			log(new StringBuilder(sql), param);
+
 			rs = psmt.executeQuery();
-			if( rs.next() ) {
-				T entity = map(rs);
-				return entity;
+			if (rs.next()) {
+				return map(rs);  // 조회된 row -> entity로 변환
 			}
 		} catch (Exception e) {
-			System.err.println(table() + " - select(pk 조회 중 에러");
+			System.err.println(table() + " - select(pk) 조회 중 에러");
 			e.printStackTrace();
 		}
 		return null;
 	}
 
+
 	@Override
-	public T where(Map<Object, Object> fields) throws Exception {
+	public T where(Map<String, Object> fields) throws Exception {
 		 return selectBy(fields);
 	}
 	
 	@Override
-    public T selectBy(Map<Object, Object> fields) throws Exception {
-        StringBuilder sql = new StringBuilder("SELECT * FROM " + table() + " WHERE ");
-        boolean first = true;
+	public T selectBy(Map<String, Object> fields) throws Exception {
+		StringBuilder sql = new StringBuilder("SELECT * FROM " + table() + " WHERE ");
+		StringBuilder param = new StringBuilder("param (?) : ");
+		boolean first = true;
 
-        for (Map.Entry<Object, Object> entry : fields.entrySet()) {
-            if (!first) {
-                sql.append(" AND ");
-            }
-            sql.append(entry.getKey()).append(" = ?");
-            first = false;
-        }
+		for (Map.Entry<String, Object> entry : fields.entrySet()) {
+			if (!first) {
+				sql.append(" AND ");
+			}
+			sql.append(entry.getKey()).append(" = ?");
+			first = false;
+		}
 
-        try {
-            psmt = con.prepareStatement(sql.toString());
+		try {
+			psmt = con.prepareStatement(sql.toString());
 
-            int index = 1;
-            for (Map.Entry<Object, Object> entry : fields.entrySet()) {
-                Object value = entry.getValue();
-                if (value instanceof String) {
-                    psmt.setString(index++, (String) value);
-                } else if (value instanceof Boolean) {
-                    psmt.setBoolean(index++, (Boolean) value);
-                } else if (value instanceof Long) {
-                    psmt.setLong(index++, (Long) value);
-                } else if (value instanceof Integer) {
-                    psmt.setInt(index++, (Integer) value);
-                } else if (value instanceof Double) {
-                    psmt.setDouble(index++, (Double) value);
-                } else if (value instanceof Float) {
-                    psmt.setFloat(index++, (Float) value);
-                } else if (value instanceof Date) {
-                    psmt.setDate(index++, new java.sql.Date(((Date) value).getTime()));
-                } else {
-                    psmt.setObject(index++, value);
-                }
-            }
-            log(sql);
-            rs = psmt.executeQuery();
-            if (rs.next()) {
-                T entity = map(rs);
-                return entity;
-            }
-        } catch (Exception e) {
-            System.err.println(table() + " - selectBy(Map<Object, Object> fields) 조회 중 에러");
-            e.printStackTrace();
-        }
-        return null;
-    }
+			int index = 1;
+			for (Map.Entry<String, Object> entry : fields.entrySet()) {
+				Object value = entry.getValue();
+				param.append("(").append(index).append(")").append(value).append(" ");
+				setPreparedStatementValue(psmt, index++, value); // 중복 제거
+			}
+
+			log(sql, param);
+
+			rs = psmt.executeQuery();
+			if (rs.next()) {
+				return map(rs);
+			}
+		} catch (Exception e) {
+			System.err.println(table() + " - selectBy(Map<String, Object>) 조회 중 에러");
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 	
 
 	/**
@@ -557,7 +526,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 				list.add(entity);
 			}
 		} catch (Exception e) {
-			System.err.println(table() + " - inaAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
+			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
 			e.printStackTrace();
 		}
 		return list;
@@ -582,7 +551,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 				list.add(entity);
 			}
 		} catch (Exception e) {
-			System.err.println(table() + " - inaAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
+			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
 			e.printStackTrace();
 		}
 		return list;
@@ -606,7 +575,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 				list.add(entity);
 			}
 		} catch (Exception e) {
-			System.err.println(table() + " - inaAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
+			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
 			e.printStackTrace();
 		}
 		return list;
@@ -614,7 +583,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 	
 	
 	@Override
-	public PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, String fields) throws Exception {
+	public PageInfo<T> inAndPage(PageInfo<T> pageInfo, String col, String fields) throws Exception {
 		Page page = pageInfo.getPage();
 		if( page == null || page.getTotal() == 0 ) {
 			int total = count(pageInfo);
@@ -652,13 +621,13 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			pageInfo.setPage(page);
 			pageInfo.setList(list);
 		} catch (Exception e) {
-			System.err.println(table() + " - inaAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
+			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
 			e.printStackTrace();
 		}
 		return pageInfo;
 	}
 	@Override
-	public PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, String... field) throws Exception {
+	public PageInfo<T> inAndPage(PageInfo<T> pageInfo, String col, String... field) throws Exception {
 		Page page = pageInfo.getPage();
 		if( page == null || page.getTotal() == 0 ) {
 			int total = count(pageInfo);
@@ -696,13 +665,13 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			pageInfo.setPage(page);
 			pageInfo.setList(list);
 		} catch (Exception e) {
-			System.err.println(table() + " - inaAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
+			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
 			e.printStackTrace();
 		}
 		return pageInfo;
 	}
 	@Override
-	public PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, List<String> fieldList) throws Exception {
+	public PageInfo<T> inAndPage(PageInfo<T> pageInfo, String col, List<String> fieldList) throws Exception {
 		Page page = pageInfo.getPage();
 		if( page == null || page.getTotal() == 0 ) {
 			int total = count(pageInfo);
@@ -740,77 +709,77 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			pageInfo.setPage(page);
 			pageInfo.setList(list);
 		} catch (Exception e) {
-			System.err.println(table() + " - inaAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
+			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
 			e.printStackTrace();
 		}
 		return pageInfo;
 	}
+	
 	@Override
 	public int insert(T entity) throws Exception {
-        int result = 0;
-        StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
-        StringBuilder placeholders = new StringBuilder(" VALUES (");
-        
-        Field[] fields = entity.getClass().getDeclaredFields();
-        boolean first = true;
+	    int result = 0;
+	    StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
+	    StringBuilder placeholders = new StringBuilder(" VALUES (");
 
-        for (Field field : fields) {
-            field.setAccessible(true);
-            Object value = field.get(entity);
+	    Field[] fields = entity.getClass().getDeclaredFields();
+	    boolean first = true;
 
-            if (value != null && !isDefaultValue(value)) {
-                if (!first) {
-                    sql.append(", ");
-                    placeholders.append(", ");
-                }
-				String fieldName = field.getName();
-				// mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
-				// System.out.println("Config.mapCamelCaseToUnderscore : " + Config.mapCamelCaseToUnderscore);
-				if (Config.mapCamelCaseToUnderscore) {
-					fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-				}
-                sql.append(fieldName);
-                placeholders.append("?");
-                first = false;
-            }
-        }
+	    for (Field field : fields) {
+	        field.setAccessible(true);
 
-        sql.append(") ");
-        placeholders.append(")");
-        sql.append(placeholders.toString());
-        
-        try {
-            psmt = con.prepareStatement(sql.toString());
-            int index = 1;
+	        Column tableField = field.getAnnotation(Column.class);
+	        if (tableField != null && !tableField.exist()) {
+	            continue;
+	        }
 
-            for (Field field : fields) {
-                field.setAccessible(true);
-                Object value = field.get(entity);
+	        Object value = field.get(entity);
 
-                if (value != null && !isDefaultValue(value)) {
-                    if (value instanceof String) {
-                        psmt.setString(index++, (String) value);
-                    } else if (value instanceof Boolean) {
-                        psmt.setBoolean(index++, (Boolean) value);
-                    } else if (value instanceof Long) {
-                        psmt.setLong(index++, (Long) value);
-                    } else if (value instanceof Integer) {
-                        psmt.setInt(index++, (Integer) value);
-                    } else if (value instanceof Date) {
-                        psmt.setDate(index++, new java.sql.Date(((Date) value).getTime()));
-                    } else {
-                        psmt.setObject(index++, value);
-                    }
-                }
-            }
-            log(sql);
-            result = psmt.executeUpdate();
-        } catch (Exception e) {
-            System.err.println(table() + " - insert(entity) 도중 에러");
-            e.printStackTrace();
-        }
-        return result;
-    }
+	        if (value != null && !isDefaultValue(value)) {
+	            if (!first) {
+	                sql.append(", ");
+	                placeholders.append(", ");
+	            }
+	            String fieldName = field.getName();
+	            if (Config.mapCamelCaseToUnderscore) {
+	                fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+	            }
+	            sql.append(fieldName);
+	            placeholders.append("?");
+	            first = false;
+	        }
+	    }
+
+	    sql.append(") ");
+	    placeholders.append(")");
+	    sql.append(placeholders.toString());
+
+	    try {
+	        psmt = con.prepareStatement(sql.toString());
+	        int index = 1;
+
+	        for (Field field : fields) {
+	            field.setAccessible(true);
+
+	            Column tableField = field.getAnnotation(Column.class);
+	            if (tableField != null && !tableField.exist()) {
+	                continue;
+	            }
+
+	            Object value = field.get(entity);
+
+	            if (value != null && !isDefaultValue(value)) {
+	                setPreparedStatementValue(psmt, index++, value);  // 중복 제거
+	            }
+	        }
+	        log(sql);
+	        result = psmt.executeUpdate();
+	    } catch (Exception e) {
+	        System.err.println(table() + " - insert(entity) 도중 에러");
+	        e.printStackTrace();
+	    }
+	    return result;
+	}
+
 
     private boolean isDefaultValue(Object value) {
         if (value instanceof Long) {
@@ -840,15 +809,22 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 
         boolean first = true;
         for (String fieldName : fieldNames) {
-            if (fieldMap.containsKey(fieldName)) {
+            Field field = fieldMap.get(fieldName);
+            if (field != null) {
+                Column tableField = field.getAnnotation(Column.class);
+                if (tableField != null && !tableField.exist()) {
+                    continue; // DB에 존재하지 않는 필드는 건너뜀
+                }
+
                 if (!first) {
                     sql.append(", ");
                     placeholders.append(", ");
                 }
-				// mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
-				// if (Config.mapCamelCaseToUnderscore) {
-				//	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-				// }
+
+                if (Config.mapCamelCaseToUnderscore) {
+                    fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+                }
+
                 sql.append(fieldName);
                 placeholders.append("?");
                 first = false;
@@ -864,22 +840,17 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
             int index = 1;
 
             for (String fieldName : fieldNames) {
-                if (fieldMap.containsKey(fieldName)) {
-                    Field field = fieldMap.get(fieldName);
+                Field field = fieldMap.get(fieldName);
+                if (field != null) {
+                    Column tableField = field.getAnnotation(Column.class);
+                    if (tableField != null && !tableField.exist()) {
+                        continue;
+                    }
+
                     field.setAccessible(true);
                     Object value = field.get(entity);
 
-                    if (value instanceof String) {
-                        psmt.setString(index++, (String) value);
-                    } else if (value instanceof Boolean) {
-                        psmt.setBoolean(index++, (Boolean) value);
-                    } else if (value instanceof Long) {
-                        psmt.setLong(index++, (Long) value);
-                    } else if (value instanceof Date) {
-                        psmt.setDate(index++, new java.sql.Date(((Date) value).getTime()));
-                    } else {
-                        psmt.setObject(index++, value);
-                    }
+                    setPreparedStatementValue(psmt, index++, value);  // 중복 제거!
                 }
             }
             log(sql);
@@ -890,35 +861,38 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
         }
         return result;
     }
+
     
     
     
     
 
     @Override
-	public T insertKey(T entity) throws Exception {
-    	int result = 0;
+    public T insertKey(T entity) throws Exception {
+        int result = 0;
         StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
         StringBuilder placeholders = new StringBuilder(" VALUES (");
-        
+
         Field[] fields = entity.getClass().getDeclaredFields();
         boolean first = true;
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = field.get(entity);
 
+            // 🔹 TableField(exist = false) 필드 건너뛰기
+            Column tf = field.getAnnotation(Column.class);
+            if (tf != null && !tf.exist()) continue;
+
+            Object value = field.get(entity);
             if (value != null && !isDefaultValue(value)) {
                 if (!first) {
                     sql.append(", ");
                     placeholders.append(", ");
                 }
-				String fieldName = field.getName();
-				// mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
-				// System.out.println("Config.mapCamelCaseToUnderscore : " + Config.mapCamelCaseToUnderscore);
-				if (Config.mapCamelCaseToUnderscore) {
-					fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-				}
+                String fieldName = field.getName();
+                if (Config.mapCamelCaseToUnderscore) {
+                    fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+                }
                 sql.append(fieldName);
                 placeholders.append("?");
                 first = false;
@@ -928,66 +902,63 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
         sql.append(") ");
         placeholders.append(")");
         sql.append(placeholders.toString());
-        
+
         try {
-        	psmt = con.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
+            psmt = con.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
             int index = 1;
 
             for (Field field : fields) {
                 field.setAccessible(true);
-                Object value = field.get(entity);
 
+                // 🔹 TableField(exist = false) 필드 건너뛰기
+                Column tf = field.getAnnotation(Column.class);
+                if (tf != null && !tf.exist()) continue;
+
+                Object value = field.get(entity);
                 if (value != null && !isDefaultValue(value)) {
-                    if (value instanceof String) {
-                        psmt.setString(index++, (String) value);
-                    } else if (value instanceof Boolean) {
-                        psmt.setBoolean(index++, (Boolean) value);
-                    } else if (value instanceof Long) {
-                        psmt.setLong(index++, (Long) value);
-                    } else if (value instanceof Integer) {
-                        psmt.setInt(index++, (Integer) value);
-                    } else if (value instanceof Date) {
-                        psmt.setDate(index++, new java.sql.Date(((Date) value).getTime()));
-                    } else {
-                        psmt.setObject(index++, value);
-                    }
+                    setPreparedStatementValue(psmt, index++, value);  // 중복 제거!
                 }
             }
+
             log(sql);
             result = psmt.executeUpdate();
         } catch (Exception e) {
             System.err.println(table() + " - insert(entity) 도중 에러");
             e.printStackTrace();
         }
-        // AUTO_INCREMENT key(INT, BIGINT)
+
+        // 🔹 AUTO_INCREMENT key 설정
         Long genKey = 0L;
-		try (ResultSet generatedKeys = psmt.getGeneratedKeys()) {
-			if (generatedKeys.next()) {
-				genKey = generatedKeys.getLong(1);
-				Field pkField = entity.getClass().getDeclaredField(pk());
-				pkField.setAccessible(true);
-				if (pkField.getType().equals(Long.class) || pkField.getType().equals(long.class)) {
-					pkField.set(entity, genKey);
-				} else if (pkField.getType().equals(Integer.class) || pkField.getType().equals(int.class)) {
-					pkField.set(entity, genKey.intValue());
-				} else if (pkField.getType().equals(String.class)) {
-					pkField.set(entity, genKey.toString());
-				} else {
-					pkField.set(entity, genKey);
-				}
-				System.out.println("genKey : " + genKey);
-			}
-		} catch (Exception e) {
-			System.err.println(table() + " - insertKey(entity) 도중 에러");
-			e.printStackTrace();
-		}
+        try (ResultSet generatedKeys = psmt.getGeneratedKeys()) {
+            if (generatedKeys.next()) {
+                genKey = generatedKeys.getLong(1);
+                Field pkField = entity.getClass().getDeclaredField(pk());
+                pkField.setAccessible(true);
+                if (pkField.getType().equals(Long.class) || pkField.getType().equals(long.class)) {
+                    pkField.set(entity, genKey);
+                } else if (pkField.getType().equals(Integer.class) || pkField.getType().equals(int.class)) {
+                    pkField.set(entity, genKey.intValue());
+                } else if (pkField.getType().equals(String.class)) {
+                    pkField.set(entity, genKey.toString());
+                } else {
+                    pkField.set(entity, genKey);
+                }
+                System.out.println("genKey : " + genKey);
+            }
+        } catch (Exception e) {
+            System.err.println(table() + " - insertKey(entity) 도중 에러");
+            e.printStackTrace();
+        }
+
         return entity;
-	}
+    }
+
+
     
     
-	@Override
-	public T insertKey(T entity, String... fieldNames) throws Exception {
-		int result = 0;
+    @Override
+    public T insertKey(T entity, String... fieldNames) throws Exception {
+        int result = 0;
         StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
         StringBuilder placeholders = new StringBuilder(" VALUES (");
 
@@ -998,19 +969,25 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 
         boolean first = true;
         for (String fieldName : fieldNames) {
-            if (fieldMap.containsKey(fieldName)) {
-                if (!first) {
-                    sql.append(", ");
-                    placeholders.append(", ");
-                }
-				// mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
-				// if (Config.mapCamelCaseToUnderscore) {
-				//	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-				// }
-                sql.append(fieldName);
-                placeholders.append("?");
-                first = false;
+            Field field = fieldMap.get(fieldName);
+            if (field == null) continue;
+
+            // 🔹 TableField(exist = false) 필드 제외
+            Column tf = field.getAnnotation(Column.class);
+            if (tf != null && !tf.exist()) continue;
+
+            if (!first) {
+                sql.append(", ");
+                placeholders.append(", ");
             }
+
+            if (Config.mapCamelCaseToUnderscore) {
+                fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+            }
+
+            sql.append(fieldName);
+            placeholders.append("?");
+            first = false;
         }
 
         sql.append(") ");
@@ -1018,294 +995,257 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
         sql.append(placeholders.toString());
 
         try {
-        	psmt = con.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
+            psmt = con.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
             int index = 1;
 
             for (String fieldName : fieldNames) {
-                if (fieldMap.containsKey(fieldName)) {
-                    Field field = fieldMap.get(fieldName);
-                    field.setAccessible(true);
-                    Object value = field.get(entity);
+                Field field = fieldMap.get(fieldName);
+                if (field == null) continue;
 
-                    if (value instanceof String) {
-                        psmt.setString(index++, (String) value);
-                    } else if (value instanceof Boolean) {
-                        psmt.setBoolean(index++, (Boolean) value);
-                    } else if (value instanceof Long) {
-                        psmt.setLong(index++, (Long) value);
-                    } else if (value instanceof Date) {
-                        psmt.setDate(index++, new java.sql.Date(((Date) value).getTime()));
-                    } else {
-                        psmt.setObject(index++, value);
-                    }
+                // 🔹 TableField(exist = false) 필드 제외
+                Column tf = field.getAnnotation(Column.class);
+                if (tf != null && !tf.exist()) continue;
+
+                field.setAccessible(true);
+                Object value = field.get(entity);
+                if (value != null && !isDefaultValue(value)) {
+                    setPreparedStatementValue(psmt, index++, value);  // 중복 제거!
                 }
             }
+
             log(sql);
             result = psmt.executeUpdate();
         } catch (Exception e) {
             System.err.println(table() + " - insert(entity, String...) 도중 에러");
             e.printStackTrace();
         }
-        
-        // AUTO_INCREMENT key(INT, BIGINT)
+
+        // AUTO_INCREMENT key 처리
         Long genKey = 0L;
-		try (ResultSet generatedKeys = psmt.getGeneratedKeys()) {
-			if (generatedKeys.next()) {
-				genKey = generatedKeys.getLong(1);
-				Field pkField = entity.getClass().getDeclaredField(pk());
-				pkField.setAccessible(true);
-				if (pkField.getType().equals(Long.class) || pkField.getType().equals(long.class)) {
-					pkField.set(entity, genKey);
-				} else if (pkField.getType().equals(Integer.class) || pkField.getType().equals(int.class)) {
-					pkField.set(entity, genKey.intValue());
-				} else if (pkField.getType().equals(String.class)) {
-					pkField.set(entity, genKey.toString());
-				} else {
-					pkField.set(entity, genKey);
-				}
-				System.out.println("genKey : " + genKey);
-			}
-		} catch (Exception e) {
-			System.err.println(table() + " - insertKey(entity) 도중 에러");
-			e.printStackTrace();
-		}
+        try (ResultSet generatedKeys = psmt.getGeneratedKeys()) {
+            if (generatedKeys.next()) {
+                genKey = generatedKeys.getLong(1);
+                Field pkField = entity.getClass().getDeclaredField(pk());
+                pkField.setAccessible(true);
+                if (pkField.getType().equals(Long.class) || pkField.getType().equals(long.class)) {
+                    pkField.set(entity, genKey);
+                } else if (pkField.getType().equals(Integer.class) || pkField.getType().equals(int.class)) {
+                    pkField.set(entity, genKey.intValue());
+                } else if (pkField.getType().equals(String.class)) {
+                    pkField.set(entity, genKey.toString());
+                } else {
+                    pkField.set(entity, genKey);
+                }
+                System.out.println("genKey : " + genKey);
+            }
+        } catch (Exception e) {
+            System.err.println(table() + " - insertKey(entity) 도중 에러");
+            e.printStackTrace();
+        }
+
         return entity;
-	}
+    }
+
 	
 	
 	@Override
-    public int update(T entity) throws Exception {
-        int result = 0;
-        StringBuilder sql = new StringBuilder("UPDATE " + table() + " SET ");
-        StringBuilder whereClause = new StringBuilder(" WHERE " + pk() + " = ?");
+	public int update(T entity) throws Exception {
+	    int result = 0;
+	    StringBuilder sql = new StringBuilder("UPDATE " + table() + " SET ");
+	    StringBuilder whereClause = new StringBuilder(" WHERE " + pk() + " = ?");
 
-        Field[] fields = entity.getClass().getDeclaredFields();
-        boolean first = true;
-        Object pkValue = null;
+	    Field[] fields = entity.getClass().getDeclaredFields();
+	    boolean first = true;
+	    Object pkValue = null;
 
-        for (Field field : fields) {
-            field.setAccessible(true);
-            Object value = field.get(entity);
-            // mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
-            String fieldName = field.getName();
-            if(Config.mapCamelCaseToUnderscore) {
-            	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-            }
-            if (fieldName.equals(pk())) {
-                pkValue = value;
-                continue;
-            }
-            if (value != null) {
-                if (!first) {
-                    sql.append(", ");
-                }
-                sql.append(fieldName).append(" = ?");
-                first = false;
-            }
-        }
-        sql.append(whereClause);
-        try {
-            psmt = con.prepareStatement(sql.toString());
-            int index = 1;
+	    for (Field field : fields) {
+	        field.setAccessible(true);
 
-            StringBuilder param = new StringBuilder("param (?) : ");
-            for (Field field : fields) {
-                field.setAccessible(true);
-                Object value = field.get(entity);
-                // mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
-                String fieldName = field.getName();
-                if(Config.mapCamelCaseToUnderscore) {
-                	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-                }
-                if (fieldName.equals(pk())) {
-                    continue;
-                }
-                if (value != null) {
-                	param.append("(" + index + ")" + value.toString() + " ");
-                    if (value instanceof String) {
-                        psmt.setString(index++, (String) value);
-                    } else if (value instanceof Boolean) {
-                        psmt.setBoolean(index++, (Boolean) value);
-                    } else if (value instanceof Long) {
-                        psmt.setLong(index++, (Long) value);
-                    } else if (value instanceof Integer) {
-                        psmt.setInt(index++, (Integer) value);
-                    } else if (value instanceof Double) {
-                        psmt.setDouble(index++, (Double) value);
-                    } else if (value instanceof Float) {
-                        psmt.setFloat(index++, (Float) value);
-                    } else if (value instanceof java.util.Date) {
-                        psmt.setDate(index++, new java.sql.Date(((java.util.Date) value).getTime()));
-                    } else {
-                        psmt.setObject(index++, value);
-                    }
-                }
-            }
+	        // 🔹 존재하지 않는 필드 제외
+	        Column tf = field.getAnnotation(Column.class);
+	        if (tf != null && !tf.exist()) continue;
 
-            // WHERE pk = ? <-- 조건 값 지정
-            param.append("(" + index + ")" + pkValue.toString() + " ");
-            if (pkValue instanceof String) {
-                psmt.setString(index, (String) pkValue);
-            } else if (pkValue instanceof Boolean) {
-                psmt.setBoolean(index, (Boolean) pkValue);
-            } else if (pkValue instanceof Long) {
-                psmt.setLong(index, (Long) pkValue);
-            } else if (pkValue instanceof Integer) {
-                psmt.setInt(index, (Integer) pkValue);
-            } else if (pkValue instanceof Double) {
-                psmt.setDouble(index, (Double) pkValue);
-            } else if (pkValue instanceof Float) {
-                psmt.setFloat(index, (Float) pkValue);
-            } else if (pkValue instanceof java.util.Date) {
-                psmt.setDate(index, new java.sql.Date(((java.util.Date) pkValue).getTime()));
-            } else {
-                psmt.setObject(index, pkValue);
-            }
-            
-            log(sql, param, pkValue.toString());
-            
-            result = psmt.executeUpdate();
-        } catch (Exception e) {
-            System.err.println(table() + " - update(entity) 도중 에러");
-            e.printStackTrace();
-        }
-        return result;
-    }
+	        Object value = field.get(entity);
+	        String fieldName = field.getName();
+	        if (Config.mapCamelCaseToUnderscore) {
+	            fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+	        }
+
+	        if (fieldName.equals(pk())) {
+	            pkValue = value;
+	            continue;
+	        }
+
+	        if (value != null) {
+	            if (!first) {
+	                sql.append(", ");
+	            }
+	            sql.append(fieldName).append(" = ?");
+	            first = false;
+	        }
+	    }
+
+	    sql.append(whereClause);
+
+	    try {
+	        psmt = con.prepareStatement(sql.toString());
+	        int index = 1;
+	        StringBuilder param = new StringBuilder("param (?) : ");
+
+	        for (Field field : fields) {
+	            field.setAccessible(true);
+
+	            // 🔹 존재하지 않는 필드 제외
+	            Column tf = field.getAnnotation(Column.class);
+	            if (tf != null && !tf.exist()) continue;
+
+	            Object value = field.get(entity);
+	            String fieldName = field.getName();
+	            if (Config.mapCamelCaseToUnderscore) {
+	                fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+	            }
+
+	            if (fieldName.equals(pk())) {
+	                continue;
+	            }
+
+	            if (value != null) {
+	                param.append("(").append(index).append(")").append(value.toString()).append(" ");
+	                setPreparedStatementValue(psmt, index++, value);  // 중복 제거!
+	            }
+	        }
+
+	        // WHERE 절의 pk 파라미터 세팅
+	        param.append("(").append(index).append(")").append(pkValue.toString()).append(" ");
+	        setPreparedStatementValue(psmt, index, pkValue);
+
+	        log(sql, param, pkValue.toString());
+	        result = psmt.executeUpdate();
+
+	    } catch (Exception e) {
+	        System.err.println(table() + " - update(entity) 도중 에러");
+	        e.printStackTrace();
+	    }
+	    return result;
+	}
+
+
 
 
 	@Override
 	public int update(T entity, String... fields) throws Exception {
-		int result = 0;
-		StringBuilder sql = new StringBuilder("UPDATE " + table() + " SET ");
-		StringBuilder whereClause = new StringBuilder(" WHERE " + pk() + " = ? ");
+	    int result = 0;
+	    StringBuilder sql = new StringBuilder("UPDATE " + table() + " SET ");
+	    StringBuilder whereClause = new StringBuilder(" WHERE " + pk() + " = ?");
 
-		Map<String, Field> fieldMap = new HashMap<>();
-		for (Field field : entity.getClass().getDeclaredFields()) {
-			fieldMap.put(field.getName(), field);
-		}
-		boolean first = true;
+	    Map<String, Field> fieldMap = new HashMap<>();
+	    for (Field field : entity.getClass().getDeclaredFields()) {
+	        fieldMap.put(field.getName(), field);
+	    }
 
-		for (String fieldName : fields) {
-			if (fieldMap.containsKey(fieldName)) {
-				Field field = fieldMap.get(fieldName);
-				field.setAccessible(true);
-				Object value = field.get(entity);
-				// mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
-	            if(Config.mapCamelCaseToUnderscore) {
-	            	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+	    boolean first = true;
+
+	    for (String fieldName : fields) {
+	        if (fieldMap.containsKey(fieldName)) {
+	            Field field = fieldMap.get(fieldName);
+
+	            // 🔹 존재하지 않는 필드 제외
+	            Column tf = field.getAnnotation(Column.class);
+	            if (tf != null && !tf.exist()) continue;
+
+	            field.setAccessible(true);
+	            Object value = field.get(entity);
+
+	            if (Config.mapCamelCaseToUnderscore) {
+	                fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
 	            }
-				if (value != null) {
-					if (!first) {
-						sql.append(", ");
-					}
-					sql.append(fieldName).append(" = ?");
-					first = false;
-				}
-			}
-		}
 
-		sql.append(whereClause);
-		
-		Field map = fieldMap.get(pk());
-		map.setAccessible(true);
-		Object val = map.get(entity);
+	            if (value != null) {
+	                if (!first) sql.append(", ");
+	                sql.append(fieldName).append(" = ?");
+	                first = false;
+	            }
+	        }
+	    }
 
-		try {
-			psmt = con.prepareStatement(sql.toString());
-			int index = 1;
-			StringBuilder param = new StringBuilder("param (?) : ");
-			for (String fieldName : fields) {
-				if (fieldMap.containsKey(fieldName)) {
-					Field field = fieldMap.get(fieldName);
-					field.setAccessible(true);
-					Object value = field.get(entity);
-					// mapCamelCaseToUnderscore=true 이면, 카멜케이스->언더스코어케이스
-	                if(Config.mapCamelCaseToUnderscore) {
-	                	fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+	    sql.append(whereClause);
+
+	    Field pkField = fieldMap.get(pk());
+	    pkField.setAccessible(true);
+	    Object pkValue = pkField.get(entity);
+
+	    try {
+	        psmt = con.prepareStatement(sql.toString());
+	        int index = 1;
+	        StringBuilder param = new StringBuilder("param (?) : ");
+
+	        for (String fieldName : fields) {
+	            if (fieldMap.containsKey(fieldName)) {
+	                Field field = fieldMap.get(fieldName);
+
+	                // 🔹 존재하지 않는 필드 제외
+	                Column tf = field.getAnnotation(Column.class);
+	                if (tf != null && !tf.exist()) continue;
+
+	                field.setAccessible(true);
+	                Object value = field.get(entity);
+
+	                if (field.getName().equals(pk())) {
+	                    continue;
 	                }
-					if (field.getName().equals(pk())) {
-						continue;
-					}
-					if (value != null) {
-						param.append("(" + index + ")" + value.toString() + " ");
-						if (value instanceof String) {
-							psmt.setString(index++, (String) value);
-						} else if (value instanceof Boolean) {
-							psmt.setBoolean(index++, (Boolean) value);
-						} else if (value instanceof Long) {
-							psmt.setLong(index++, (Long) value);
-						} else if (value instanceof Integer) {
-							psmt.setInt(index++, (Integer) value);
-						} else if (value instanceof Double) {
-							psmt.setDouble(index++, (Double) value);
-						} else if (value instanceof Float) {
-							psmt.setFloat(index++, (Float) value);
-						} else if (value instanceof java.util.Date) {
-							psmt.setDate(index++, new java.sql.Date(((java.util.Date) value).getTime()));
-						} else {
-							psmt.setObject(index++, value);
-						}
-					}
-				}
-			}
-			
-			Field pkField = fieldMap.get( pk() );
-			Object pkValue = pkField.get(entity);;
 
-			// WHERE pk = ? <-- 조건 값 지정
-			param.append("(" + index + ")" + pkValue.toString() + " ");
-			if (pkValue instanceof String) {
-				psmt.setString(index, (String) pkValue);
-			} else if (pkValue instanceof Boolean) {
-				psmt.setBoolean(index, (Boolean) pkValue);
-			} else if (pkValue instanceof Long) {
-				psmt.setLong(index, (Long) pkValue);
-			} else if (pkValue instanceof Integer) {
-				psmt.setInt(index, (Integer) pkValue);
-			} else if (pkValue instanceof Double) {
-				psmt.setDouble(index, (Double) pkValue);
-			} else if (pkValue instanceof Float) {
-				psmt.setFloat(index, (Float) pkValue);
-			} else if (pkValue instanceof java.util.Date) {
-				psmt.setDate(index, new java.sql.Date(((java.util.Date) pkValue).getTime()));
-			} else {
-				psmt.setObject(index, pkValue);
-			}
-			
-			log(sql, param, pkValue.toString());
-			
-			result = psmt.executeUpdate();
-		} catch (Exception e) {
-			System.err.println(table() + " - update(entity, String...) 도중 에러");
-			e.printStackTrace();
-		}
-		return result;
+	                if (Config.mapCamelCaseToUnderscore) {
+	                    fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+	                }
+
+	                if (value != null) {
+	                    param.append("(").append(index).append(")").append(value.toString()).append(" ");
+	                    setPreparedStatementValue(psmt, index++, value);  // 중복 제거!
+	                }
+	            }
+	        }
+
+	        // 🔸 WHERE 절 pk 바인딩
+	        param.append("(").append(index).append(")").append(pkValue.toString()).append(" ");
+	        if (pkValue instanceof String) {
+	            psmt.setString(index, (String) pkValue);
+	        } else if (pkValue instanceof Boolean) {
+	            psmt.setBoolean(index, (Boolean) pkValue);
+	        } else if (pkValue instanceof Long) {
+	            psmt.setLong(index, (Long) pkValue);
+	        } else if (pkValue instanceof Integer) {
+	            psmt.setInt(index, (Integer) pkValue);
+	        } else if (pkValue instanceof Double) {
+	            psmt.setDouble(index, (Double) pkValue);
+	        } else if (pkValue instanceof Float) {
+	            psmt.setFloat(index, (Float) pkValue);
+	        } else if (pkValue instanceof java.util.Date) {
+	            psmt.setDate(index, new java.sql.Date(((java.util.Date) pkValue).getTime()));
+	        } else {
+	            psmt.setObject(index, pkValue);
+	        }
+
+	        log(sql, param, pkValue.toString());
+	        result = psmt.executeUpdate();
+	    } catch (Exception e) {
+	        System.err.println(table() + " - update(entity, String...) 도중 에러");
+	        e.printStackTrace();
+	    }
+
+	    return result;
 	}
+
 
 	@Override
 	public int delete(Object pk) throws Exception {
 		int result = 0;
 		String sql = "DELETE FROM " + table() + " WHERE " + pk() + " = ?";
+
 		try {
 			psmt = con.prepareStatement(sql);
-			if (pk instanceof String) {
-				psmt.setString(1, (String) pk);
-			} else if (pk instanceof Boolean) {
-				psmt.setBoolean(1, (Boolean) pk);
-			} else if (pk instanceof Long) {
-				psmt.setLong(1, (Long) pk);
-			} else if (pk instanceof Integer) {
-				psmt.setInt(1, (Integer) pk);
-			} else if (pk instanceof Double) {
-				psmt.setDouble(1, (Double) pk);
-			} else if (pk instanceof Float) {
-				psmt.setFloat(1, (Float) pk);
-			} else {
-				psmt.setObject(1, pk);
-			}
-			
+			setPreparedStatementValue(psmt, 1, pk);  // 🔹 타입별 분기 공통 메서드로 분리
+
 			log(sql);
-			
 			result = psmt.executeUpdate();
 		} catch (Exception e) {
 			System.err.println(table() + " - delete(pk) 도중 에러");
@@ -1315,50 +1255,37 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 	}
 
 	@Override
-	public int deleteBy(Map<Object, Object> fields) throws Exception {
+	public int deleteBy(Map<String, Object> fields) throws Exception {
 		int result = 0;
 		StringBuilder sql = new StringBuilder("DELETE FROM " + table() + " WHERE ");
 		boolean first = true;
 
-		for (Map.Entry<Object, Object> entry : fields.entrySet()) {
+		for (Map.Entry<String, Object> entry : fields.entrySet()) {
+			String fieldName = entry.getKey();
+			if (Config.mapCamelCaseToUnderscore) {
+				fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+			}
 			if (!first) {
 				sql.append(" AND ");
 			}
-			sql.append(entry.getKey()).append(" = ?");
+			sql.append(fieldName).append(" = ?");
 			first = false;
 		}
-		System.out.println(sql);
 
 		try {
 			psmt = con.prepareStatement(sql.toString());
-
 			int index = 1;
-			for (Map.Entry<Object, Object> entry : fields.entrySet()) {
-				Object value = entry.getValue();
-				System.out.println("value : " + value);
-				if (value instanceof String) {
-					psmt.setString(index++, (String) value);
-				} else if (value instanceof Boolean) {
-					psmt.setBoolean(index++, (Boolean) value);
-				} else if (value instanceof Long) {
-					psmt.setLong(index++, (Long) value);
-				} else if (value instanceof Integer) {
-					psmt.setInt(index++, (Integer) value);
-				} else if (value instanceof Double) {
-					psmt.setDouble(index++, (Double) value);
-				} else if (value instanceof Float) {
-					psmt.setFloat(index++, (Float) value);
-				} else if (value instanceof Date) {
-					psmt.setDate(index++, new java.sql.Date(((Date) value).getTime()));
-				} else {
-					psmt.setObject(index++, value);
-				}
+			StringBuilder paramLog = new StringBuilder("param (?) : ");
+
+			for (Object value : fields.values()) {
+				paramLog.append("(").append(index).append(")").append(value).append(" ");
+				setPreparedStatementValue(psmt, index++, value);
 			}
-			log(sql);
-			
+
+			log(sql, paramLog);
 			result = psmt.executeUpdate();
 		} catch (Exception e) {
-			System.err.println(table() + " - deleteBy(Map<Object, Object> fields) 도중 에러");
+			System.err.println(table() + " - deleteBy(Map<String, Object> fields) 도중 에러");
 			e.printStackTrace();
 		}
 		return result;
@@ -1473,6 +1400,30 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			System.out.println("==================================================");
 		}
 	}
+	
+	
+	// 🔸 타입 분기 공통화
+	private void setPreparedStatementValue(PreparedStatement ps, int index, Object value) throws SQLException {
+		if (value instanceof String) {
+			ps.setString(index, (String) value);
+		} else if (value instanceof Boolean) {
+			ps.setBoolean(index, (Boolean) value);
+		} else if (value instanceof Long) {
+			ps.setLong(index, (Long) value);
+		} else if (value instanceof Integer) {
+			ps.setInt(index, (Integer) value);
+		} else if (value instanceof Double) {
+			ps.setDouble(index, (Double) value);
+		} else if (value instanceof Float) {
+			ps.setFloat(index, (Float) value);
+		} else if (value instanceof java.util.Date) {
+			ps.setDate(index, new java.sql.Date(((java.util.Date) value).getTime()));
+		} else {
+			ps.setObject(index, value);
+		}
+	}
+	
+	
 
 }
 

@@ -57,7 +57,7 @@ public interface BaseDAO<T> {
 	// 목록
 	List<T> list() throws Exception;
 
-	List<T> listBy(Map<Object, Object> fields) throws Exception;
+	List<T> listBy(Map<String, Object> fields) throws Exception;
 
 	// 페이징
 	PageInfo<T> page() throws Exception;
@@ -89,7 +89,7 @@ public interface BaseDAO<T> {
 	 * @return
 	 * @throws Exception
 	 */
-	T selectBy(Map<Object, Object> fields) throws Exception;
+	T selectBy(Map<String, Object> fields) throws Exception;
 
 	/**
 	 * where == selectBy - 이름만 쉽게
@@ -98,7 +98,7 @@ public interface BaseDAO<T> {
 	 * @return
 	 * @throws Exception
 	 */
-	T where(Map<Object, Object> fields) throws Exception;
+	T where(Map<String, Object> fields) throws Exception;
 
 	List<T> in(String col, String fields) throws Exception;
 
@@ -106,11 +106,11 @@ public interface BaseDAO<T> {
 
 	List<T> in(String col, List<String> fieldList) throws Exception;
 
-	PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, String fields) throws Exception;
+	PageInfo<T> inAndPage(PageInfo<T> pageInfo, String col, String fields) throws Exception;
 
-	PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, String... field) throws Exception;
+	PageInfo<T> inAndPage(PageInfo<T> pageInfo, String col, String... field) throws Exception;
 
-	PageInfo<T> inaAndPage(PageInfo<T> pageInfo, String col, List<String> fieldList) throws Exception;
+	PageInfo<T> inAndPage(PageInfo<T> pageInfo, String col, List<String> fieldList) throws Exception;
 
 	/**
 	 * insert - null 이 아닌 필드만 insert
@@ -185,7 +185,7 @@ public interface BaseDAO<T> {
 	 * @return
 	 * @throws Exception
 	 */
-	int deleteBy(Map<Object, Object> fields) throws Exception;
+	int deleteBy(Map<String, Object> fields) throws Exception;
 
 	/**
 	 * 개수 - 전체
