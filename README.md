@@ -3,6 +3,19 @@
 
 <br><br><br>
 
+# 데이터 소스 설정
+### db.properties
+```
+db.url=jdbc:mysql://127.0.0.1:3306/aloha?serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&useSSL=false
+db.username=aloha
+db.password=123456
+mapUnderscoreToCamelCase=true
+mapCamelCaseToUnderscore=true
+autoCommit=true
+sqlLog=true
+```
+<br><br><br>
+
 # 👩‍🏫사용법
 
 ## 1. Entity 클래스 생성
