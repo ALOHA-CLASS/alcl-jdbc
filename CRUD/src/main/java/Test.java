@@ -14,12 +14,12 @@ public class Test {
 		for (Board board : list) {
 			System.out.println(board);
 		}
-//		Board board = Board.builder()
-//							.title("수정")
-//							.build();
-//		String id = "42abca32-3220-11f0-ac9a-a8a1596f255e";
-//		boolean result = service.updateById(board, id);
-//		System.out.println("수정 결과 : " + result);
+		Board board = Board.builder()
+							.title("수정")
+							.build();
+		String id = "42abca32-3220-11f0-ac9a-a8a1596f255e";
+		boolean result = service.updateById(board, id);
+		System.out.println("수정 결과 : " + result);
 	}
 
 }
