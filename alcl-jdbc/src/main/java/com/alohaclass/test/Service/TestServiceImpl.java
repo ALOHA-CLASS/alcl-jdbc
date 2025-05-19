@@ -1,4 +1,4 @@
-package Service;
+package com.alohaclass.test.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,9 +7,8 @@ import java.util.Map;
 
 import com.alohaclass.jdbc.dto.Page;
 import com.alohaclass.jdbc.dto.PageInfo;
-
-import DAO.TestDAO;
-import DTO.Test;
+import com.alohaclass.test.DAO.TestDAO;
+import com.alohaclass.test.DTO.Test;
 
 public class TestServiceImpl implements TestService {
 	

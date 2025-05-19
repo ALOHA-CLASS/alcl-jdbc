@@ -1,4 +1,4 @@
-package Service;
+package com.alohaclass.test.Service;
 
 import java.util.HashMap;
 import java.util.List;
@@ -6,9 +6,8 @@ import java.util.Map;
 
 import com.alohaclass.jdbc.dto.Page;
 import com.alohaclass.jdbc.dto.PageInfo;
-
-import DAO.BoardDAO;
-import DTO.Board;
+import com.alohaclass.test.DAO.BoardDAO;
+import com.alohaclass.test.DTO.Board;
 
 public class BoardServiceImpl implements BoardService {
 	

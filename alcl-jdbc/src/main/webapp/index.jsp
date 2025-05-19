@@ -1,10 +1,11 @@
-<%@page import="DTO.Board"%>
+<%@page import="com.alohaclass.test.DAO.BoardDAO"%>
+<%@page import="com.alohaclass.test.DTO.Board"%>
 <%@page import="java.util.List"%>
-<%@page import="Service.BoardServiceImpl"%>
-<%@page import="Service.BoardService"%>
-<%@page import="Service.TestServiceImpl"%>
-<%@page import="Service.TestService"%>
-<%@page import="DTO.Test"%>
+<%@page import="com.alohaclass.test.Service.BoardServiceImpl"%>
+<%@page import="com.alohaclass.test.Service.BoardService"%>
+<%@page import="com.alohaclass.test.Service.TestServiceImpl"%>
+<%@page import="com.alohaclass.test.Service.TestService"%>
+<%@page import="com.alohaclass.test.DTO.Test"%>
 <%@page import="com.alohaclass.jdbc.config.Config"%>
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>

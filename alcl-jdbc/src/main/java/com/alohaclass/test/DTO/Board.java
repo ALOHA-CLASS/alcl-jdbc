@@ -1,4 +1,4 @@
-package DTO;
+package com.alohaclass.test.DTO;
 
 import java.util.Date;
 

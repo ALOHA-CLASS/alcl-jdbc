@@ -1,10 +1,9 @@
-package Service;
+package com.alohaclass.test.Service;
 
 import java.util.List;
 
 import com.alohaclass.jdbc.dto.PageInfo;
-
-import DTO.Test;
+import com.alohaclass.test.DTO.Test;
 
 public interface TestService {
 	

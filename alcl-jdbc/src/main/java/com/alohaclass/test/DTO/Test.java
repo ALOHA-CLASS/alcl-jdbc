@@ -1,4 +1,4 @@
-package DTO;
+package com.alohaclass.test.DTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

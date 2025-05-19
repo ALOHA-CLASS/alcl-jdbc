@@ -168,6 +168,15 @@ public interface BaseDAO<T> {
 	 * @throws Exception
 	 */
 	int update(T entity, String... fields) throws Exception;
+	
+	/**
+	 * update - 1개 이상의 필드를 기준으로 조회
+	 * @param entity
+	 * @param map
+	 * @return
+	 * @throws Exception
+	 */
+	int updateBy(T entity, Map<String, Object> map) throws Exception;
 
 	/**
 	 * delete - pk 를 기준으로 delete

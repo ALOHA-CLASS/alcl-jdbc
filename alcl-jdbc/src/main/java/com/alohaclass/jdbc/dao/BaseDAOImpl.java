@@ -527,7 +527,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			}
 		} catch (Exception e) {
 			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
-			e.printStackTrace();
+		 e.printStackTrace();
 		}
 		return list;
 	}
@@ -552,7 +552,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			}
 		} catch (Exception e) {
 			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
-			e.printStackTrace();
+		 e.printStackTrace();
 		}
 		return list;
 	}
@@ -576,7 +576,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			}
 		} catch (Exception e) {
 			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
-			e.printStackTrace();
+		 e.printStackTrace();
 		}
 		return list;
 	}
@@ -666,7 +666,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			pageInfo.setList(list);
 		} catch (Exception e) {
 			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
-			e.printStackTrace();
+		 e.printStackTrace();
 		}
 		return pageInfo;
 	}
@@ -710,7 +710,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			pageInfo.setList(list);
 		} catch (Exception e) {
 			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
-			e.printStackTrace();
+		 e.printStackTrace();
 		}
 		return pageInfo;
 	}
@@ -1234,7 +1234,78 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 
 	    return result;
 	}
+	
+	@Override
+	public int updateBy(T entity, Map<String, Object> map) throws Exception {
+		int result = 0;
+		StringBuilder sql = new StringBuilder("UPDATE " + table() + " SET ");
+		Field[] fields = entity.getClass().getDeclaredFields();
+		boolean first = true;
 
+		// SET절 구성 (PK 제외, null 제외)
+		for (Field field : fields) {
+			field.setAccessible(true);
+			Column tf = field.getAnnotation(Column.class);
+			if (tf != null && !tf.exist()) continue;
+			String fieldName = field.getName();
+			if (Config.mapCamelCaseToUnderscore) {
+				fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+			}
+			if (fieldName.equals(pk())) continue;
+			Object value = field.get(entity);
+			if (value != null) {
+				if (!first) sql.append(", ");
+				sql.append(fieldName).append(" = ?");
+				first = false;
+			}
+		}
+
+		// WHERE절 구성
+		sql.append(" WHERE ");
+		boolean firstCond = true;
+		for (String key : map.keySet()) {
+			String fieldName = key;
+			if (Config.mapCamelCaseToUnderscore) {
+				fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+			}
+			if (!firstCond) sql.append(" AND ");
+			sql.append(fieldName).append(" = ?");
+			firstCond = false;
+		}
+
+		try {
+			psmt = con.prepareStatement(sql.toString());
+			int index = 1;
+			StringBuilder param = new StringBuilder("param (?) : ");
+			// SET절 파라미터 바인딩
+			for (Field field : fields) {
+				field.setAccessible(true);
+				Column tf = field.getAnnotation(Column.class);
+				if (tf != null && !tf.exist()) continue;
+				String fieldName = field.getName();
+				if (Config.mapCamelCaseToUnderscore) {
+					fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+				}
+				if (fieldName.equals(pk())) continue;
+				Object value = field.get(entity);
+				if (value != null) {
+					param.append("(").append(index).append(")").append(value).append(" ");
+					setPreparedStatementValue(psmt, index++, value);
+				}
+			}
+			// WHERE절 파라미터 바인딩
+			for (Object value : map.values()) {
+				param.append("(").append(index).append(")").append(value).append(" ");
+				setPreparedStatementValue(psmt, index++, value);
+			}
+			log(sql, param);
+			result = psmt.executeUpdate();
+		} catch (Exception e) {
+			System.err.println(table() + " - updateBy(entity, map) 도중 에러");
+		 e.printStackTrace();
+		}
+		return result;
+	}
 
 	@Override
 	public int delete(Object pk) throws Exception {
@@ -1249,7 +1320,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			result = psmt.executeUpdate();
 		} catch (Exception e) {
 			System.err.println(table() + " - delete(pk) 도중 에러");
-			e.printStackTrace();
+		 e.printStackTrace();
 		}
 		return result;
 	}
@@ -1286,7 +1357,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			result = psmt.executeUpdate();
 		} catch (Exception e) {
 			System.err.println(table() + " - deleteBy(Map<String, Object> fields) 도중 에러");
-			e.printStackTrace();
+		 e.printStackTrace();
 		}
 		return result;
 	}
@@ -1374,7 +1445,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 	public void log(StringBuilder sql) {
 		if( Config.sqlLog ) {
 			System.out.println("[SQL] - alcl.jdbc");
-			System.out.println("==================================================");
+		 System.out.println("==================================================");
 			System.out.println(sql.toString());
 			System.out.println("==================================================");
 		}
@@ -1393,7 +1464,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 	public void log(StringBuilder sql, StringBuilder param, String pk) {
 		if( Config.sqlLog ) {
 			System.out.println("[SQL] - alcl.jdbc");
-			System.out.println("==================================================");
+		 System.out.println("==================================================");
 			System.out.println(sql);
 			System.out.println(param.toString());
 			System.out.println("pk - " + pk() + " : " + pk);
