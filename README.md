@@ -99,6 +99,7 @@ boardDAO.delete(board);
 | `insertKey(T entity)` | 저장 후 PK 값 반환 |
 | `update(T entity)` | 전체 필드 업데이트 |
 | `update(T entity, String... fields)` | 일부 필드 업데이트 |
+| `updateBy(T entity, Map<String, Object> where)` | 조건 기반 일부 필드 업데이트 |
 | `delete(Object pk)` | PK 기반 삭제 |
 | `deleteBy(Map<String, Object> fields)` | 조건 기반 삭제 |
 | `in(String col, List<String> values)` | IN 조건 목록 조회 |
