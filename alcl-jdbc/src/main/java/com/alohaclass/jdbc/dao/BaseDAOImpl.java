@@ -40,7 +40,11 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
     	Class<T> clazz = getGenericType();
         for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(Pk.class)) {
-                return field.getName();
+            	String fieldName = field.getName();
+    			if (Config.mapCamelCaseToUnderscore) {
+    				fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+    			}
+                return fieldName;
             }
         }
         throw new IllegalStateException("클래스 " + clazz.getSimpleName() + "에 @Pk 필드가 없습니다.");
