@@ -1,3 +1,6 @@
+<%@page import="java.util.ArrayList"%>
+<%@page import="com.alohaclass.jdbc.dto.PageInfo"%>
+<%@page import="com.alohaclass.jdbc.dto.Page"%>
 <%@page import="com.alohaclass.test.DAO.BoardDAO"%>
 <%@page import="com.alohaclass.test.DTO.Board"%>
 <%@page import="java.util.List"%>
@@ -35,6 +38,7 @@
     
 	board = boardService.selectById("55432865-3174-11f0-83a9-a8a1596f255e");
 	if( board == null ) board = new Board();
+	
 	
 %>
 <!DOCTYPE html>

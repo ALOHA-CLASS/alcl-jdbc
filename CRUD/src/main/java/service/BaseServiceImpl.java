@@ -29,7 +29,7 @@ public class BaseServiceImpl<D extends BaseDAOImpl<T>, T> implements BaseService
 	}
 
 	@Override
-	public PageInfo<T> getPageList(int page, int pageSize) {
+	public PageInfo<T> page(int page, int pageSize) {
 		PageInfo<T> pageInfo = null;
 		try {
 			Page pageObj = new Page();
@@ -41,6 +41,8 @@ public class BaseServiceImpl<D extends BaseDAOImpl<T>, T> implements BaseService
 		}
 		return pageInfo;
 	}
+	
+	
 
 	@Override
 	public T select(Long no) {
@@ -125,6 +127,31 @@ public class BaseServiceImpl<D extends BaseDAOImpl<T>, T> implements BaseService
 		return result > 0;
 	}
 
+	@Override
+	public PageInfo<T> page(Page page, String keyword, List<String> columns) {
+		PageInfo<T> pageInfo = null;
+		try {
+			pageInfo = dao.page(page, keyword, columns);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return pageInfo;
+	}
+	
+
 	
 	
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

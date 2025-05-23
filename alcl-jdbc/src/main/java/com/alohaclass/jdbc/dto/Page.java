@@ -3,6 +3,7 @@ package com.alohaclass.jdbc.dto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * [페이징]
@@ -20,7 +21,7 @@ import lombok.Data;
  */
 @Data
 @AllArgsConstructor
-@Builder
+// @Builder  // 버그나는 버전이 있어서 제외
 public class Page {
 
     // 페이징 기본값
