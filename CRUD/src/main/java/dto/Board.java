@@ -24,6 +24,7 @@ public class Board {
 	private String title;
 	private String writer;
 	private String content;
+	private Date date;
 	private Date createdAt;
 	private Date updatedAt;
 	

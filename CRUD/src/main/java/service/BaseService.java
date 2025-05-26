@@ -11,7 +11,7 @@ public interface BaseService<T> {
     PageInfo<T> page(Page page, String keyword, List<String> columns); // 페이징 검색 리스트 (page: 페이지 번호, pageSize: 페이지당 데이터 수, searchType: 검색 타입, columns: 검색할 컬럼)
     T select(Long no);                                  // no(PK) 조회
     T selectById(String id);                            // id(PK) 조회
-    boolean create(T entity);                           // 생성
+    boolean insert(T entity);                           // 생성
     boolean update(T entity);                           // 수정
     boolean updateById(T entity, String id);            // id(PK) 수정
     boolean delete(Long no);                            // no(PK) 삭제

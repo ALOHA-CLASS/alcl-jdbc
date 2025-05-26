@@ -69,7 +69,7 @@ public class BaseServiceImpl<D extends BaseDAOImpl<T>, T> implements BaseService
 	}
 
 	@Override
-	public boolean create(T entity) {
+	public boolean insert(T entity) {
 		int result = 0;
 		try {
 			result = dao.insert(entity);

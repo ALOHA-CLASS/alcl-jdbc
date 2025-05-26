@@ -6,15 +6,17 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.alohaclass.jdbc.annotation.Column;
 import com.alohaclass.jdbc.annotation.Pk;
 import com.alohaclass.jdbc.annotation.Table;
-import com.alohaclass.jdbc.annotation.Column;
 import com.alohaclass.jdbc.config.Config;
 import com.alohaclass.jdbc.dto.Page;
 import com.alohaclass.jdbc.dto.PageInfo;
@@ -22,45 +24,42 @@ import com.alohaclass.jdbc.utils.StringUtil;
 
 public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T> {
 
-	
 	public String table() {
 		// 제네릭 타입 T의 실제 클래스 얻기
 		Class<T> clazz = getGenericType();
 
-        // 어노테이션에서 테이블 이름 추출
-        if (clazz.isAnnotationPresent(Table.class)) {
-            Table table = clazz.getAnnotation(Table.class);
-            return table.value();
-        }
+		// 어노테이션에서 테이블 이름 추출
+		if (clazz.isAnnotationPresent(Table.class)) {
+			Table table = clazz.getAnnotation(Table.class);
+			return table.value();
+		}
 
-        throw new IllegalStateException("클래스 " + clazz.getSimpleName() + "에 @Table 어노테이션이 없습니다.");
+		throw new IllegalStateException("클래스 " + clazz.getSimpleName() + "에 @Table 어노테이션이 없습니다.");
 	}
-	
-    public String pk() {
-    	Class<T> clazz = getGenericType();
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Pk.class)) {
-            	String fieldName = field.getName();
-    			if (Config.mapCamelCaseToUnderscore) {
-    				fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-    			}
-                return fieldName;
-            }
-        }
-        throw new IllegalStateException("클래스 " + clazz.getSimpleName() + "에 @Pk 필드가 없습니다.");
-    }
-    
-    @SuppressWarnings("unchecked")
-    private Class<T> getGenericType() {
-        return (Class<T>) ((ParameterizedType) getClass()
-                .getGenericSuperclass())
-                .getActualTypeArguments()[0];
-    }
-    
-    public T map(ResultSet rs) throws Exception {
-    	ParameterizedType superclass = (ParameterizedType) getClass().getGenericSuperclass();
-    	Class<T> clazz = (Class<T>) superclass.getActualTypeArguments()[0];
-    	T entity = clazz.getDeclaredConstructor().newInstance();
+
+	public String pk() {
+		Class<T> clazz = getGenericType();
+		for (Field field : clazz.getDeclaredFields()) {
+			if (field.isAnnotationPresent(Pk.class)) {
+				String fieldName = field.getName();
+				if (Config.mapCamelCaseToUnderscore) {
+					fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+				}
+				return fieldName;
+			}
+		}
+		throw new IllegalStateException("클래스 " + clazz.getSimpleName() + "에 @Pk 필드가 없습니다.");
+	}
+
+	@SuppressWarnings("unchecked")
+	private Class<T> getGenericType() {
+		return (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+	}
+
+	public T map(ResultSet rs) throws Exception {
+		ParameterizedType superclass = (ParameterizedType) getClass().getGenericSuperclass();
+		Class<T> clazz = (Class<T>) superclass.getActualTypeArguments()[0];
+		T entity = clazz.getDeclaredConstructor().newInstance();
 		Field[] fields = clazz.getDeclaredFields();
 		for (Field field : fields) {
 			field.setAccessible(true);
@@ -90,9 +89,8 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			}
 		}
 		return entity;
-    }
-	
-    
+	}
+
 	@Override
 	public List<T> list() throws Exception {
 		String sql = " SELECT * FROM " + table();
@@ -101,7 +99,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			stmt = con.createStatement();
 			log(sql);
 			rs = stmt.executeQuery(sql);
-			while( rs.next() ) {
+			while (rs.next()) {
 				T entity = map(rs);
 				list.add(entity);
 			}
@@ -111,8 +109,6 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		}
 		return list;
 	}
-	
-	
 
 	@Override
 	public List<T> listBy(Map<String, Object> fields) throws Exception {
@@ -156,16 +152,13 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		return null;
 	}
 
-	
-	
 	@Override
 	public PageInfo<T> page() throws Exception {
 		int total = count();
 		Page page = new Page(total);
-		
-		String sql = " SELECT * FROM " + table()
-				   + " LIMIT ?, ? ";
-		
+
+		String sql = " SELECT * FROM " + table() + " LIMIT ?, ? ";
+
 		PageInfo<T> pageInfo = new PageInfo<>();
 		List<T> list = new ArrayList<T>();
 		try {
@@ -175,7 +168,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			psmt.setInt(index++, page.getSize());
 			log(sql);
 			rs = psmt.executeQuery();
-			while( rs.next() ) {
+			while (rs.next()) {
 				T entity = map(rs);
 				list.add(entity);
 			}
@@ -191,21 +184,17 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 	@Override
 	public PageInfo<T> page(PageInfo<T> pageInfo) throws Exception {
 		Page page = pageInfo.getPage();
-		if( page == null || page.getTotal() == 0 ) {
+		if (page == null || page.getTotal() == 0) {
 			int total = count(pageInfo);
-			if( page == null ) page = new Page();
+			if (page == null)
+				page = new Page();
 			page.setTotal(total);
 		}
 		String searchCondition = getSearchOptions(pageInfo.getSearchOptions());
 		int searchCounditionCount = pageInfo.getSearchOptions().size();
-		String sql = " SELECT * "
-				   + " FROM " + table()
-				   + " WHERE 1=1"
-				   + "   AND ( "
-				   + searchCondition
-				   + "       )"
-				   + " LIMIT ?, ? ";
-		
+		String sql = " SELECT * " + " FROM " + table() + " WHERE 1=1" + "   AND ( " + searchCondition + "       )"
+				+ " LIMIT ?, ? ";
+
 		List<T> list = new ArrayList<T>();
 		try {
 			psmt = con.prepareStatement(sql);
@@ -217,7 +206,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			psmt.setInt(index++, page.getSize());
 			log(sql);
 			rs = psmt.executeQuery();
-			while( rs.next() ) {
+			while (rs.next()) {
 				T entity = map(rs);
 				list.add(entity);
 			}
@@ -232,14 +221,13 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 
 	@Override
 	public PageInfo<T> page(Page page) throws Exception {
-		if( page == null || page.getTotal() == 0 ) {
+		if (page == null || page.getTotal() == 0) {
 			int total = count();
-			if( page == null ) page = new Page();
+			if (page == null)
+				page = new Page();
 			page.setTotal(total);
 		}
-		String sql = " SELECT * "
-				   + " FROM " + table()
-				   + " LIMIT ?, ? ";
+		String sql = " SELECT * " + " FROM " + table() + " LIMIT ?, ? ";
 		PageInfo<T> pageInfo = new PageInfo<>();
 		List<T> list = new ArrayList<T>();
 		try {
@@ -249,7 +237,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			psmt.setInt(index++, page.getSize());
 			log(sql);
 			rs = psmt.executeQuery();
-			while( rs.next() ) {
+			while (rs.next()) {
 				T entity = map(rs);
 				list.add(entity);
 			}
@@ -261,23 +249,18 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		}
 		return pageInfo;
 	}
-	
-	
 
 	@Override
 	public PageInfo<T> page(Page page, Map<String, String> filterOptions) throws Exception {
-		if( page == null || page.getTotal() == 0 ) {
+		if (page == null || page.getTotal() == 0) {
 			int total = count();
-			if( page == null ) page = new Page();
+			if (page == null)
+				page = new Page();
 			page.setTotal(total);
 		}
 		String orderBy = getFilterOptions(filterOptions);
-		String sql = " SELECT * "
-				   + " FROM " + table()
-				   + " WHERE 1=1 "
-				   + orderBy
-				   + " LIMIT ?, ? ";
-		
+		String sql = " SELECT * " + " FROM " + table() + " WHERE 1=1 " + orderBy + " LIMIT ?, ? ";
+
 		PageInfo<T> pageInfo = new PageInfo<>();
 		List<T> list = new ArrayList<T>();
 		try {
@@ -287,7 +270,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			psmt.setInt(index++, page.getSize());
 			log(sql);
 			rs = psmt.executeQuery();
-			while( rs.next() ) {
+			while (rs.next()) {
 				T entity = map(rs);
 				list.add(entity);
 			}
@@ -299,25 +282,20 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		}
 		return pageInfo;
 	}
-	
-	
+
 	@Override
 	public PageInfo<T> page(Page page, String keyword, List<String> searchOptions) throws Exception {
-		if( page == null || page.getTotal() == 0 ) {
+		if (page == null || page.getTotal() == 0) {
 			int total = count(keyword, searchOptions);
-			if( page == null ) page = new Page();
+			if (page == null)
+				page = new Page();
 			page.setTotal(total);
 		}
 		String searchCondition = getSearchOptions(searchOptions);
 		int searchCounditionCount = searchOptions == null ? 0 : searchOptions.size();
-		String sql = " SELECT * "
-				   + " FROM " + table()
-				   + " WHERE 1=1"
-				   + "   AND ( "
-				   + searchCondition
-				   + "       )"
-				   + " LIMIT ?, ? ";
-		
+		String sql = " SELECT * " + " FROM " + table() + " WHERE 1=1" + "   AND ( " + searchCondition + "       )"
+				+ " LIMIT ?, ? ";
+
 		PageInfo<T> pageInfo = new PageInfo<>();
 		List<T> list = new ArrayList<T>();
 		try {
@@ -330,7 +308,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			psmt.setInt(index++, page.getSize());
 			log(sql);
 			rs = psmt.executeQuery();
-			while( rs.next() ) {
+			while (rs.next()) {
 				T entity = map(rs);
 				list.add(entity);
 			}
@@ -346,32 +324,28 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 	@Override
 	public PageInfo<T> page(Page page, String keyword, List<String> searchOptions, Map<String, String> filterOptions)
 			throws Exception {
-		if( page == null || page.getTotal() == 0 ) {
+		if (page == null || page.getTotal() == 0) {
 			int total = count(keyword, searchOptions);
-			if( page == null ) page = new Page();
+			if (page == null)
+				page = new Page();
 			page.setTotal(total);
 		}
-				
+
 		String searchCondition = getSearchOptions(searchOptions);
 		String AND = " AND ( " + searchCondition + " )";
-		
-		if( (keyword == null || keyword.equals("")) ||  (searchOptions == null || searchOptions.size() ==0 ))   {
+
+		if ((keyword == null || keyword.equals("")) || (searchOptions == null || searchOptions.size() == 0)) {
 			AND = "";
 		}
 		int searchCounditionCount = searchOptions == null ? 0 : searchOptions.size();
 		String orderBy = getFilterOptions(filterOptions);
-		String sql = " SELECT * "
-				   + " FROM " + table()
-				   + " WHERE 1=1 "
-				   + AND
-				   + orderBy
-				   + " LIMIT ?, ? ";
-		
+		String sql = " SELECT * " + " FROM " + table() + " WHERE 1=1 " + AND + orderBy + " LIMIT ?, ? ";
+
 		PageInfo<T> pageInfo = new PageInfo<>();
 		List<T> list = new ArrayList<T>();
 		try {
 			psmt = con.prepareStatement(sql);
-			
+
 			int index = 1;
 			for (int i = 0; i < searchCounditionCount; i++) {
 				psmt.setString(index++, keyword);
@@ -380,7 +354,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			psmt.setInt(index++, page.getSize());
 			log(sql);
 			rs = psmt.executeQuery();
-			while( rs.next() ) {
+			while (rs.next()) {
 				T entity = map(rs);
 				list.add(entity);
 			}
@@ -400,12 +374,12 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 
 		try {
 			psmt = con.prepareStatement(sql);
-			setPreparedStatementValue(psmt, 1, pk);  // 중복 제거
+			setPreparedStatementValue(psmt, 1, pk); // 중복 제거
 			log(new StringBuilder(sql), param);
 
 			rs = psmt.executeQuery();
 			if (rs.next()) {
-				return map(rs);  // 조회된 row -> entity로 변환
+				return map(rs); // 조회된 row -> entity로 변환
 			}
 		} catch (Exception e) {
 			System.err.println(table() + " - select(pk) 조회 중 에러");
@@ -414,12 +388,11 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		return null;
 	}
 
-
 	@Override
 	public T where(Map<String, Object> fields) throws Exception {
-		 return selectBy(fields);
+		return selectBy(fields);
 	}
-	
+
 	@Override
 	public T selectBy(Map<String, Object> fields) throws Exception {
 		StringBuilder sql = new StringBuilder("SELECT * FROM " + table() + " WHERE ");
@@ -457,10 +430,9 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		return null;
 	}
 
-	
-
 	/**
 	 * IN 조건 값들을 '' 로 묶어서 반환
+	 * 
 	 * @param col
 	 * @param fields
 	 * @return
@@ -482,8 +454,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		}
 		return "AND " + col + " IN ( " + formattedFields.toString() + " ) ";
 	}
-	
-	
+
 	private String getInConditions(String col, String... fields) {
 		if (fields == null || fields.length == 0) {
 			return "";
@@ -497,7 +468,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		}
 		return "AND " + col + " IN ( " + formattedFields.toString() + " ) ";
 	}
-	
+
 	private String getInConditions(String col, List<String> fieldList) {
 		if (fieldList == null || fieldList.isEmpty()) {
 			return "";
@@ -515,98 +486,82 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 	@Override
 	public List<T> in(String col, String fields) throws Exception {
 		String IN = getInCondition(col, fields);
-		String sql = " SELECT * "
-				   + " FROM " + table()
-				   + " WHERE 1=1 "
-				   + IN ;
-		
+		String sql = " SELECT * " + " FROM " + table() + " WHERE 1=1 " + IN;
+
 		List<T> list = new ArrayList<T>();
 		try {
 			psmt = con.prepareStatement(sql);
 			log(sql);
 			rs = psmt.executeQuery();
-			while( rs.next() ) {
+			while (rs.next()) {
 				T entity = map(rs);
 				list.add(entity);
 			}
 		} catch (Exception e) {
 			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
-		 e.printStackTrace();
+			e.printStackTrace();
 		}
 		return list;
 	}
-	
-	
+
 	@Override
 	public List<T> in(String col, String... field) throws Exception {
 		String IN = getInConditions(col, field);
-		String sql = " SELECT * "
-				   + " FROM " + table()
-				   + " WHERE 1=1 "
-				   + IN ;
-		
+		String sql = " SELECT * " + " FROM " + table() + " WHERE 1=1 " + IN;
+
 		List<T> list = new ArrayList<T>();
 		try {
 			psmt = con.prepareStatement(sql);
 			log(sql);
 			rs = psmt.executeQuery();
-			while( rs.next() ) {
+			while (rs.next()) {
 				T entity = map(rs);
 				list.add(entity);
 			}
 		} catch (Exception e) {
 			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
-		 e.printStackTrace();
+			e.printStackTrace();
 		}
 		return list;
 	}
-	
+
 	@Override
 	public List<T> in(String col, List<String> fieldList) throws Exception {
 		String IN = getInConditions(col, fieldList);
-		String sql = " SELECT * "
-				   + " FROM " + table()
-				   + " WHERE 1=1 "
-				   + IN ;
-		
+		String sql = " SELECT * " + " FROM " + table() + " WHERE 1=1 " + IN;
+
 		List<T> list = new ArrayList<T>();
 		try {
 			psmt = con.prepareStatement(sql);
 			log(sql);
 			rs = psmt.executeQuery();
-			while( rs.next() ) {
+			while (rs.next()) {
 				T entity = map(rs);
 				list.add(entity);
 			}
 		} catch (Exception e) {
 			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
-		 e.printStackTrace();
+			e.printStackTrace();
 		}
 		return list;
 	}
-	
-	
+
 	@Override
 	public PageInfo<T> inAndPage(PageInfo<T> pageInfo, String col, String fields) throws Exception {
 		Page page = pageInfo.getPage();
-		if( page == null || page.getTotal() == 0 ) {
+		if (page == null || page.getTotal() == 0) {
 			int total = count(pageInfo);
-			if( page == null ) page = new Page();
+			if (page == null)
+				page = new Page();
 			page.setTotal(total);
 		}
 		String searchCondition = getSearchOptions(pageInfo.getSearchOptions());
 		int searchCounditionCount = pageInfo.getSearchOptions().size();
-		
+
 		String IN = getInCondition(col, fields);
-		String sql = " SELECT * "
-				   + " FROM " + table()
-				   + " WHERE 1=1 "
-				   + IN 
-				   + " AND   ( "
-				   + searchCondition
-				   + "       )"
-				   + " LIMIT ?, ? ";
-		
+		String sql = " SELECT * " + " FROM " + table() + " WHERE 1=1 " + IN + " AND   ( " + searchCondition + "       )"
+				+ " LIMIT ?, ? ";
+
 		List<T> list = new ArrayList<T>();
 		try {
 			psmt = con.prepareStatement(sql);
@@ -618,7 +573,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			psmt.setInt(index++, page.getSize());
 			log(sql);
 			rs = psmt.executeQuery();
-			while( rs.next() ) {
+			while (rs.next()) {
 				T entity = map(rs);
 				list.add(entity);
 			}
@@ -630,27 +585,23 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		}
 		return pageInfo;
 	}
+
 	@Override
 	public PageInfo<T> inAndPage(PageInfo<T> pageInfo, String col, String... field) throws Exception {
 		Page page = pageInfo.getPage();
-		if( page == null || page.getTotal() == 0 ) {
+		if (page == null || page.getTotal() == 0) {
 			int total = count(pageInfo);
-			if( page == null ) page = new Page();
+			if (page == null)
+				page = new Page();
 			page.setTotal(total);
 		}
 		String searchCondition = getSearchOptions(pageInfo.getSearchOptions());
 		int searchCounditionCount = pageInfo.getSearchOptions().size();
-		
+
 		String IN = getInConditions(col, field);
-		String sql = " SELECT * "
-				   + " FROM " + table()
-				   + " WHERE 1=1 "
-				   + IN 
-				   + " AND   ( "
-				   + searchCondition
-				   + "       )"
-				   + " LIMIT ?, ? ";
-		
+		String sql = " SELECT * " + " FROM " + table() + " WHERE 1=1 " + IN + " AND   ( " + searchCondition + "       )"
+				+ " LIMIT ?, ? ";
+
 		List<T> list = new ArrayList<T>();
 		try {
 			psmt = con.prepareStatement(sql);
@@ -662,7 +613,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			psmt.setInt(index++, page.getSize());
 			log(sql);
 			rs = psmt.executeQuery();
-			while( rs.next() ) {
+			while (rs.next()) {
 				T entity = map(rs);
 				list.add(entity);
 			}
@@ -670,31 +621,27 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			pageInfo.setList(list);
 		} catch (Exception e) {
 			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
-		 e.printStackTrace();
+			e.printStackTrace();
 		}
 		return pageInfo;
 	}
+
 	@Override
 	public PageInfo<T> inAndPage(PageInfo<T> pageInfo, String col, List<String> fieldList) throws Exception {
 		Page page = pageInfo.getPage();
-		if( page == null || page.getTotal() == 0 ) {
+		if (page == null || page.getTotal() == 0) {
 			int total = count(pageInfo);
-			if( page == null ) page = new Page();
+			if (page == null)
+				page = new Page();
 			page.setTotal(total);
 		}
 		String searchCondition = getSearchOptions(pageInfo.getSearchOptions());
 		int searchCounditionCount = pageInfo.getSearchOptions().size();
-		
+
 		String IN = getInConditions(col, fieldList);
-		String sql = " SELECT * "
-				   + " FROM " + table()
-				   + " WHERE 1=1 "
-				   + IN 
-				   + " AND   ( "
-				   + searchCondition
-				   + "       )"
-				   + " LIMIT ?, ? ";
-		
+		String sql = " SELECT * " + " FROM " + table() + " WHERE 1=1 " + IN + " AND   ( " + searchCondition + "       )"
+				+ " LIMIT ?, ? ";
+
 		List<T> list = new ArrayList<T>();
 		try {
 			psmt = con.prepareStatement(sql);
@@ -706,7 +653,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			psmt.setInt(index++, page.getSize());
 			log(sql);
 			rs = psmt.executeQuery();
-			while( rs.next() ) {
+			while (rs.next()) {
 				T entity = map(rs);
 				list.add(entity);
 			}
@@ -714,531 +661,528 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			pageInfo.setList(list);
 		} catch (Exception e) {
 			System.err.println(table() + " - inAndPage(PageInfo<T> pageInfo, String col, String fields) 조회 중 에러");
-		 e.printStackTrace();
+			e.printStackTrace();
 		}
 		return pageInfo;
 	}
-	
+
 	@Override
 	public int insert(T entity) throws Exception {
-	    int result = 0;
-	    StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
-	    StringBuilder placeholders = new StringBuilder(" VALUES (");
+		int result = 0;
+		StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
+		StringBuilder placeholders = new StringBuilder(" VALUES (");
 
-	    Field[] fields = entity.getClass().getDeclaredFields();
-	    boolean first = true;
+		Field[] fields = entity.getClass().getDeclaredFields();
+		boolean first = true;
 
-	    for (Field field : fields) {
-	        field.setAccessible(true);
+		for (Field field : fields) {
+			field.setAccessible(true);
 
-	        Column tableField = field.getAnnotation(Column.class);
-	        if (tableField != null && !tableField.exist()) {
-	            continue;
-	        }
+			Column tableField = field.getAnnotation(Column.class);
+			if (tableField != null && !tableField.exist()) {
+				continue;
+			}
 
-	        Object value = field.get(entity);
+			Object value = field.get(entity);
 
-	        if (value != null && !isDefaultValue(value)) {
-	            if (!first) {
-	                sql.append(", ");
-	                placeholders.append(", ");
-	            }
-	            String fieldName = field.getName();
-	            if (Config.mapCamelCaseToUnderscore) {
-	                fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-	            }
-	            sql.append(fieldName);
-	            placeholders.append("?");
-	            first = false;
-	        }
-	    }
+			if (value != null && !isDefaultValue(value)) {
+				if (!first) {
+					sql.append(", ");
+					placeholders.append(", ");
+				}
+				String fieldName = field.getName();
+				if (Config.mapCamelCaseToUnderscore) {
+					fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+				}
+				sql.append(fieldName);
+				placeholders.append("?");
+				first = false;
+			}
+		}
 
-	    sql.append(") ");
-	    placeholders.append(")");
-	    sql.append(placeholders.toString());
+		sql.append(") ");
+		placeholders.append(")");
+		sql.append(placeholders.toString());
 
-	    try {
-	        psmt = con.prepareStatement(sql.toString());
-	        int index = 1;
+		try {
+			psmt = con.prepareStatement(sql.toString());
+			int index = 1;
 
-	        for (Field field : fields) {
-	            field.setAccessible(true);
+			for (Field field : fields) {
+				field.setAccessible(true);
 
-	            Column tableField = field.getAnnotation(Column.class);
-	            if (tableField != null && !tableField.exist()) {
-	                continue;
-	            }
+				Column tableField = field.getAnnotation(Column.class);
+				if (tableField != null && !tableField.exist()) {
+					continue;
+				}
 
-	            Object value = field.get(entity);
+				Object value = field.get(entity);
 
-	            if (value != null && !isDefaultValue(value)) {
-	                setPreparedStatementValue(psmt, index++, value);  // 중복 제거
-	            }
-	        }
-	        log(sql);
-	        result = psmt.executeUpdate();
-	    } catch (Exception e) {
-	        System.err.println(table() + " - insert(entity) 도중 에러");
-	        e.printStackTrace();
-	    }
-	    return result;
+				if (value != null && !isDefaultValue(value)) {
+					setPreparedStatementValue(psmt, index++, value); // 중복 제거
+				}
+			}
+			log(sql);
+			result = psmt.executeUpdate();
+		} catch (Exception e) {
+			System.err.println(table() + " - insert(entity) 도중 에러");
+			e.printStackTrace();
+		}
+		return result;
 	}
 
+	private boolean isDefaultValue(Object value) {
+		if (value instanceof Long) {
+			return (Long) value == 0;
+		} else if (value instanceof Boolean) {
+			return !(Boolean) value;
+		} else if (value instanceof Integer) {
+			return (Integer) value == 0;
+		} else if (value instanceof Double) {
+			return (Double) value == 0.0;
+		} else if (value instanceof Float) {
+			return (Float) value == 0.0f;
+		}
+		return false;
+	}
 
-    private boolean isDefaultValue(Object value) {
-        if (value instanceof Long) {
-            return (Long) value == 0;
-        } else if (value instanceof Boolean) {
-            return !(Boolean) value;
-        } else if (value instanceof Integer) {
-            return (Integer) value == 0;
-        } else if (value instanceof Double) {
-            return (Double) value == 0.0;
-        } else if (value instanceof Float) {
-            return (Float) value == 0.0f;
-        }
-        return false;
-    }
-    
-    @Override
-    public int insert(T entity, String... fieldNames) throws Exception {
-        int result = 0;
-        StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
-        StringBuilder placeholders = new StringBuilder(" VALUES (");
+	@Override
+	public int insert(T entity, String... fieldNames) throws Exception {
+		int result = 0;
+		StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
+		StringBuilder placeholders = new StringBuilder(" VALUES (");
 
-        Map<String, Field> fieldMap = new HashMap<>();
-        for (Field field : entity.getClass().getDeclaredFields()) {
-            fieldMap.put(field.getName(), field);
-        }
+		Map<String, Field> fieldMap = new HashMap<>();
+		for (Field field : entity.getClass().getDeclaredFields()) {
+			fieldMap.put(field.getName(), field);
+		}
 
-        boolean first = true;
-        for (String fieldName : fieldNames) {
-            Field field = fieldMap.get(fieldName);
-            if (field != null) {
-                Column tableField = field.getAnnotation(Column.class);
-                if (tableField != null && !tableField.exist()) {
-                    continue; // DB에 존재하지 않는 필드는 건너뜀
-                }
+		boolean first = true;
+		for (String fieldName : fieldNames) {
+			Field field = fieldMap.get(fieldName);
+			if (field != null) {
+				Column tableField = field.getAnnotation(Column.class);
+				if (tableField != null && !tableField.exist()) {
+					continue; // DB에 존재하지 않는 필드는 건너뜀
+				}
 
-                if (!first) {
-                    sql.append(", ");
-                    placeholders.append(", ");
-                }
+				if (!first) {
+					sql.append(", ");
+					placeholders.append(", ");
+				}
 
-                if (Config.mapCamelCaseToUnderscore) {
-                    fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-                }
+				if (Config.mapCamelCaseToUnderscore) {
+					fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+				}
 
-                sql.append(fieldName);
-                placeholders.append("?");
-                first = false;
-            }
-        }
+				sql.append(fieldName);
+				placeholders.append("?");
+				first = false;
+			}
+		}
 
-        sql.append(") ");
-        placeholders.append(")");
-        sql.append(placeholders.toString());
+		sql.append(") ");
+		placeholders.append(")");
+		sql.append(placeholders.toString());
 
-        try {
-            psmt = con.prepareStatement(sql.toString());
-            int index = 1;
+		try {
+			psmt = con.prepareStatement(sql.toString());
+			int index = 1;
 
-            for (String fieldName : fieldNames) {
-                Field field = fieldMap.get(fieldName);
-                if (field != null) {
-                    Column tableField = field.getAnnotation(Column.class);
-                    if (tableField != null && !tableField.exist()) {
-                        continue;
-                    }
+			for (String fieldName : fieldNames) {
+				Field field = fieldMap.get(fieldName);
+				if (field != null) {
+					Column tableField = field.getAnnotation(Column.class);
+					if (tableField != null && !tableField.exist()) {
+						continue;
+					}
 
-                    field.setAccessible(true);
-                    Object value = field.get(entity);
+					field.setAccessible(true);
+					Object value = field.get(entity);
 
-                    setPreparedStatementValue(psmt, index++, value);  // 중복 제거!
-                }
-            }
-            log(sql);
-            result = psmt.executeUpdate();
-        } catch (Exception e) {
-            System.err.println(table() + " - insert(entity, String...) 도중 에러");
-            e.printStackTrace();
-        }
-        return result;
-    }
+					setPreparedStatementValue(psmt, index++, value); // 중복 제거!
+				}
+			}
+			log(sql);
+			result = psmt.executeUpdate();
+		} catch (Exception e) {
+			System.err.println(table() + " - insert(entity, String...) 도중 에러");
+			e.printStackTrace();
+		}
+		return result;
+	}
 
-    
-    
-    
-    
+	@Override
+	public T insertKey(T entity) throws Exception {
+		int result = 0;
+		StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
+		StringBuilder placeholders = new StringBuilder(" VALUES (");
 
-    @Override
-    public T insertKey(T entity) throws Exception {
-        int result = 0;
-        StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
-        StringBuilder placeholders = new StringBuilder(" VALUES (");
+		Field[] fields = entity.getClass().getDeclaredFields();
+		boolean first = true;
 
-        Field[] fields = entity.getClass().getDeclaredFields();
-        boolean first = true;
+		for (Field field : fields) {
+			field.setAccessible(true);
 
-        for (Field field : fields) {
-            field.setAccessible(true);
+			// 🔹 TableField(exist = false) 필드 건너뛰기
+			Column tf = field.getAnnotation(Column.class);
+			if (tf != null && !tf.exist())
+				continue;
 
-            // 🔹 TableField(exist = false) 필드 건너뛰기
-            Column tf = field.getAnnotation(Column.class);
-            if (tf != null && !tf.exist()) continue;
+			Object value = field.get(entity);
+			if (value != null && !isDefaultValue(value)) {
+				if (!first) {
+					sql.append(", ");
+					placeholders.append(", ");
+				}
+				String fieldName = field.getName();
+				if (Config.mapCamelCaseToUnderscore) {
+					fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+				}
+				sql.append(fieldName);
+				placeholders.append("?");
+				first = false;
+			}
+		}
 
-            Object value = field.get(entity);
-            if (value != null && !isDefaultValue(value)) {
-                if (!first) {
-                    sql.append(", ");
-                    placeholders.append(", ");
-                }
-                String fieldName = field.getName();
-                if (Config.mapCamelCaseToUnderscore) {
-                    fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-                }
-                sql.append(fieldName);
-                placeholders.append("?");
-                first = false;
-            }
-        }
+		sql.append(") ");
+		placeholders.append(")");
+		sql.append(placeholders.toString());
 
-        sql.append(") ");
-        placeholders.append(")");
-        sql.append(placeholders.toString());
+		try {
+			psmt = con.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
+			int index = 1;
 
-        try {
-            psmt = con.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
-            int index = 1;
+			for (Field field : fields) {
+				field.setAccessible(true);
 
-            for (Field field : fields) {
-                field.setAccessible(true);
+				// 🔹 TableField(exist = false) 필드 건너뛰기
+				Column tf = field.getAnnotation(Column.class);
+				if (tf != null && !tf.exist())
+					continue;
 
-                // 🔹 TableField(exist = false) 필드 건너뛰기
-                Column tf = field.getAnnotation(Column.class);
-                if (tf != null && !tf.exist()) continue;
+				Object value = field.get(entity);
+				if (value != null && !isDefaultValue(value)) {
+					setPreparedStatementValue(psmt, index++, value); // 중복 제거!
+				}
+			}
 
-                Object value = field.get(entity);
-                if (value != null && !isDefaultValue(value)) {
-                    setPreparedStatementValue(psmt, index++, value);  // 중복 제거!
-                }
-            }
+			log(sql);
+			result = psmt.executeUpdate();
+		} catch (Exception e) {
+			System.err.println(table() + " - insert(entity) 도중 에러");
+			e.printStackTrace();
+		}
 
-            log(sql);
-            result = psmt.executeUpdate();
-        } catch (Exception e) {
-            System.err.println(table() + " - insert(entity) 도중 에러");
-            e.printStackTrace();
-        }
+		// 🔹 AUTO_INCREMENT key 설정
+		Long genKey = 0L;
+		try (ResultSet generatedKeys = psmt.getGeneratedKeys()) {
+			if (generatedKeys.next()) {
+				genKey = generatedKeys.getLong(1);
+				Field pkField = entity.getClass().getDeclaredField(pk());
+				pkField.setAccessible(true);
+				if (pkField.getType().equals(Long.class) || pkField.getType().equals(long.class)) {
+					pkField.set(entity, genKey);
+				} else if (pkField.getType().equals(Integer.class) || pkField.getType().equals(int.class)) {
+					pkField.set(entity, genKey.intValue());
+				} else if (pkField.getType().equals(String.class)) {
+					pkField.set(entity, genKey.toString());
+				} else {
+					pkField.set(entity, genKey);
+				}
+				System.out.println("genKey : " + genKey);
+			}
+		} catch (Exception e) {
+			System.err.println(table() + " - insertKey(entity) 도중 에러");
+			e.printStackTrace();
+		}
 
-        // 🔹 AUTO_INCREMENT key 설정
-        Long genKey = 0L;
-        try (ResultSet generatedKeys = psmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                genKey = generatedKeys.getLong(1);
-                Field pkField = entity.getClass().getDeclaredField(pk());
-                pkField.setAccessible(true);
-                if (pkField.getType().equals(Long.class) || pkField.getType().equals(long.class)) {
-                    pkField.set(entity, genKey);
-                } else if (pkField.getType().equals(Integer.class) || pkField.getType().equals(int.class)) {
-                    pkField.set(entity, genKey.intValue());
-                } else if (pkField.getType().equals(String.class)) {
-                    pkField.set(entity, genKey.toString());
-                } else {
-                    pkField.set(entity, genKey);
-                }
-                System.out.println("genKey : " + genKey);
-            }
-        } catch (Exception e) {
-            System.err.println(table() + " - insertKey(entity) 도중 에러");
-            e.printStackTrace();
-        }
+		return entity;
+	}
 
-        return entity;
-    }
+	@Override
+	public T insertKey(T entity, String... fieldNames) throws Exception {
+		int result = 0;
+		StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
+		StringBuilder placeholders = new StringBuilder(" VALUES (");
 
+		Map<String, Field> fieldMap = new HashMap<>();
+		for (Field field : entity.getClass().getDeclaredFields()) {
+			fieldMap.put(field.getName(), field);
+		}
 
-    
-    
-    @Override
-    public T insertKey(T entity, String... fieldNames) throws Exception {
-        int result = 0;
-        StringBuilder sql = new StringBuilder("INSERT INTO " + table() + " (");
-        StringBuilder placeholders = new StringBuilder(" VALUES (");
+		boolean first = true;
+		for (String fieldName : fieldNames) {
+			Field field = fieldMap.get(fieldName);
+			if (field == null)
+				continue;
 
-        Map<String, Field> fieldMap = new HashMap<>();
-        for (Field field : entity.getClass().getDeclaredFields()) {
-            fieldMap.put(field.getName(), field);
-        }
+			// 🔹 TableField(exist = false) 필드 제외
+			Column tf = field.getAnnotation(Column.class);
+			if (tf != null && !tf.exist())
+				continue;
 
-        boolean first = true;
-        for (String fieldName : fieldNames) {
-            Field field = fieldMap.get(fieldName);
-            if (field == null) continue;
+			if (!first) {
+				sql.append(", ");
+				placeholders.append(", ");
+			}
 
-            // 🔹 TableField(exist = false) 필드 제외
-            Column tf = field.getAnnotation(Column.class);
-            if (tf != null && !tf.exist()) continue;
+			if (Config.mapCamelCaseToUnderscore) {
+				fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+			}
 
-            if (!first) {
-                sql.append(", ");
-                placeholders.append(", ");
-            }
+			sql.append(fieldName);
+			placeholders.append("?");
+			first = false;
+		}
 
-            if (Config.mapCamelCaseToUnderscore) {
-                fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-            }
+		sql.append(") ");
+		placeholders.append(")");
+		sql.append(placeholders.toString());
 
-            sql.append(fieldName);
-            placeholders.append("?");
-            first = false;
-        }
+		try {
+			psmt = con.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
+			int index = 1;
 
-        sql.append(") ");
-        placeholders.append(")");
-        sql.append(placeholders.toString());
+			for (String fieldName : fieldNames) {
+				Field field = fieldMap.get(fieldName);
+				if (field == null)
+					continue;
 
-        try {
-            psmt = con.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
-            int index = 1;
+				// 🔹 TableField(exist = false) 필드 제외
+				Column tf = field.getAnnotation(Column.class);
+				if (tf != null && !tf.exist())
+					continue;
 
-            for (String fieldName : fieldNames) {
-                Field field = fieldMap.get(fieldName);
-                if (field == null) continue;
+				field.setAccessible(true);
+				Object value = field.get(entity);
+				if (value != null && !isDefaultValue(value)) {
+					setPreparedStatementValue(psmt, index++, value); // 중복 제거!
+				}
+			}
 
-                // 🔹 TableField(exist = false) 필드 제외
-                Column tf = field.getAnnotation(Column.class);
-                if (tf != null && !tf.exist()) continue;
+			log(sql);
+			result = psmt.executeUpdate();
+		} catch (Exception e) {
+			System.err.println(table() + " - insert(entity, String...) 도중 에러");
+			e.printStackTrace();
+		}
 
-                field.setAccessible(true);
-                Object value = field.get(entity);
-                if (value != null && !isDefaultValue(value)) {
-                    setPreparedStatementValue(psmt, index++, value);  // 중복 제거!
-                }
-            }
+		// AUTO_INCREMENT key 처리
+		Long genKey = 0L;
+		try (ResultSet generatedKeys = psmt.getGeneratedKeys()) {
+			if (generatedKeys.next()) {
+				genKey = generatedKeys.getLong(1);
+				Field pkField = entity.getClass().getDeclaredField(pk());
+				pkField.setAccessible(true);
+				if (pkField.getType().equals(Long.class) || pkField.getType().equals(long.class)) {
+					pkField.set(entity, genKey);
+				} else if (pkField.getType().equals(Integer.class) || pkField.getType().equals(int.class)) {
+					pkField.set(entity, genKey.intValue());
+				} else if (pkField.getType().equals(String.class)) {
+					pkField.set(entity, genKey.toString());
+				} else {
+					pkField.set(entity, genKey);
+				}
+				System.out.println("genKey : " + genKey);
+			}
+		} catch (Exception e) {
+			System.err.println(table() + " - insertKey(entity) 도중 에러");
+			e.printStackTrace();
+		}
 
-            log(sql);
-            result = psmt.executeUpdate();
-        } catch (Exception e) {
-            System.err.println(table() + " - insert(entity, String...) 도중 에러");
-            e.printStackTrace();
-        }
+		return entity;
+	}
 
-        // AUTO_INCREMENT key 처리
-        Long genKey = 0L;
-        try (ResultSet generatedKeys = psmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                genKey = generatedKeys.getLong(1);
-                Field pkField = entity.getClass().getDeclaredField(pk());
-                pkField.setAccessible(true);
-                if (pkField.getType().equals(Long.class) || pkField.getType().equals(long.class)) {
-                    pkField.set(entity, genKey);
-                } else if (pkField.getType().equals(Integer.class) || pkField.getType().equals(int.class)) {
-                    pkField.set(entity, genKey.intValue());
-                } else if (pkField.getType().equals(String.class)) {
-                    pkField.set(entity, genKey.toString());
-                } else {
-                    pkField.set(entity, genKey);
-                }
-                System.out.println("genKey : " + genKey);
-            }
-        } catch (Exception e) {
-            System.err.println(table() + " - insertKey(entity) 도중 에러");
-            e.printStackTrace();
-        }
-
-        return entity;
-    }
-
-	
-	
 	@Override
 	public int update(T entity) throws Exception {
-	    int result = 0;
-	    StringBuilder sql = new StringBuilder("UPDATE " + table() + " SET ");
-	    StringBuilder whereClause = new StringBuilder(" WHERE " + pk() + " = ?");
+		int result = 0;
+		StringBuilder sql = new StringBuilder("UPDATE " + table() + " SET ");
+		StringBuilder whereClause = new StringBuilder(" WHERE " + pk() + " = ?");
 
-	    Field[] fields = entity.getClass().getDeclaredFields();
-	    boolean first = true;
-	    Object pkValue = null;
+		Field[] fields = entity.getClass().getDeclaredFields();
+		boolean first = true;
+		Object pkValue = null;
 
-	    for (Field field : fields) {
-	        field.setAccessible(true);
+		for (Field field : fields) {
+			field.setAccessible(true);
 
-	        // 🔹 존재하지 않는 필드 제외
-	        Column tf = field.getAnnotation(Column.class);
-	        if (tf != null && !tf.exist()) continue;
+			// 🔹 존재하지 않는 필드 제외
+			Column tf = field.getAnnotation(Column.class);
+			if (tf != null && !tf.exist())
+				continue;
 
-	        Object value = field.get(entity);
-	        String fieldName = field.getName();
-	        if (Config.mapCamelCaseToUnderscore) {
-	            fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-	        }
+			Object value = field.get(entity);
+			String fieldName = field.getName();
+			if (Config.mapCamelCaseToUnderscore) {
+				fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+			}
 
-	        if (fieldName.equals(pk())) {
-	            pkValue = value;
-	            continue;
-	        }
+			if (fieldName.equals(pk())) {
+				pkValue = value;
+				continue;
+			}
 
-	        if (value != null) {
-	            if (!first) {
-	                sql.append(", ");
-	            }
-	            sql.append(fieldName).append(" = ?");
-	            first = false;
-	        }
-	    }
+			if (value != null) {
+				if (!first) {
+					sql.append(", ");
+				}
+				sql.append(fieldName).append(" = ?");
+				first = false;
+			}
+		}
 
-	    sql.append(whereClause);
+		sql.append(whereClause);
 
-	    try {
-	        psmt = con.prepareStatement(sql.toString());
-	        int index = 1;
-	        StringBuilder param = new StringBuilder("param (?) : ");
+		try {
+			psmt = con.prepareStatement(sql.toString());
+			int index = 1;
+			StringBuilder param = new StringBuilder("param (?) : ");
 
-	        for (Field field : fields) {
-	            field.setAccessible(true);
+			for (Field field : fields) {
+				field.setAccessible(true);
 
-	            // 🔹 존재하지 않는 필드 제외
-	            Column tf = field.getAnnotation(Column.class);
-	            if (tf != null && !tf.exist()) continue;
+				// 🔹 존재하지 않는 필드 제외
+				Column tf = field.getAnnotation(Column.class);
+				if (tf != null && !tf.exist())
+					continue;
 
-	            Object value = field.get(entity);
-	            String fieldName = field.getName();
-	            if (Config.mapCamelCaseToUnderscore) {
-	                fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-	            }
+				Object value = field.get(entity);
+				String fieldName = field.getName();
+				if (Config.mapCamelCaseToUnderscore) {
+					fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+				}
 
-	            if (fieldName.equals(pk())) {
-	                continue;
-	            }
+				if (fieldName.equals(pk())) {
+					continue;
+				}
 
-	            if (value != null) {
-	                param.append("(").append(index).append(")").append(value.toString()).append(" ");
-	                setPreparedStatementValue(psmt, index++, value);  // 중복 제거!
-	            }
-	        }
+				if (value != null) {
+					param.append("(").append(index).append(")").append(value.toString()).append(" ");
+					setPreparedStatementValue(psmt, index++, value); // 중복 제거!
+				}
+			}
 
-	        // WHERE 절의 pk 파라미터 세팅
-	        param.append("(").append(index).append(")").append(pkValue.toString()).append(" ");
-	        setPreparedStatementValue(psmt, index, pkValue);
+			// WHERE 절의 pk 파라미터 세팅
+			param.append("(").append(index).append(")").append(pkValue.toString()).append(" ");
+			setPreparedStatementValue(psmt, index, pkValue);
 
-	        log(sql, param, pkValue.toString());
-	        result = psmt.executeUpdate();
+			log(sql, param, pkValue.toString());
+			result = psmt.executeUpdate();
 
-	    } catch (Exception e) {
-	        System.err.println(table() + " - update(entity) 도중 에러");
-	        e.printStackTrace();
-	    }
-	    return result;
+		} catch (Exception e) {
+			System.err.println(table() + " - update(entity) 도중 에러");
+			e.printStackTrace();
+		}
+		return result;
 	}
-
-
-
 
 	@Override
 	public int update(T entity, String... fields) throws Exception {
-	    int result = 0;
-	    StringBuilder sql = new StringBuilder("UPDATE " + table() + " SET ");
-	    StringBuilder whereClause = new StringBuilder(" WHERE " + pk() + " = ?");
+		int result = 0;
+		StringBuilder sql = new StringBuilder("UPDATE " + table() + " SET ");
+		StringBuilder whereClause = new StringBuilder(" WHERE " + pk() + " = ?");
 
-	    Map<String, Field> fieldMap = new HashMap<>();
-	    for (Field field : entity.getClass().getDeclaredFields()) {
-	        fieldMap.put(field.getName(), field);
-	    }
+		Map<String, Field> fieldMap = new HashMap<>();
+		for (Field field : entity.getClass().getDeclaredFields()) {
+			fieldMap.put(field.getName(), field);
+		}
 
-	    boolean first = true;
+		boolean first = true;
 
-	    for (String fieldName : fields) {
-	        if (fieldMap.containsKey(fieldName)) {
-	            Field field = fieldMap.get(fieldName);
+		for (String fieldName : fields) {
+			if (fieldMap.containsKey(fieldName)) {
+				Field field = fieldMap.get(fieldName);
 
-	            // 🔹 존재하지 않는 필드 제외
-	            Column tf = field.getAnnotation(Column.class);
-	            if (tf != null && !tf.exist()) continue;
+				// 🔹 존재하지 않는 필드 제외
+				Column tf = field.getAnnotation(Column.class);
+				if (tf != null && !tf.exist())
+					continue;
 
-	            field.setAccessible(true);
-	            Object value = field.get(entity);
+				field.setAccessible(true);
+				Object value = field.get(entity);
 
-	            if (Config.mapCamelCaseToUnderscore) {
-	                fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-	            }
+				if (Config.mapCamelCaseToUnderscore) {
+					fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+				}
 
-	            if (value != null) {
-	                if (!first) sql.append(", ");
-	                sql.append(fieldName).append(" = ?");
-	                first = false;
-	            }
-	        }
-	    }
+				if (value != null) {
+					if (!first)
+						sql.append(", ");
+					sql.append(fieldName).append(" = ?");
+					first = false;
+				}
+			}
+		}
 
-	    sql.append(whereClause);
+		sql.append(whereClause);
 
-	    Field pkField = fieldMap.get(pk());
-	    pkField.setAccessible(true);
-	    Object pkValue = pkField.get(entity);
+		Field pkField = fieldMap.get(pk());
+		pkField.setAccessible(true);
+		Object pkValue = pkField.get(entity);
 
-	    try {
-	        psmt = con.prepareStatement(sql.toString());
-	        int index = 1;
-	        StringBuilder param = new StringBuilder("param (?) : ");
+		try {
+			psmt = con.prepareStatement(sql.toString());
+			int index = 1;
+			StringBuilder param = new StringBuilder("param (?) : ");
 
-	        for (String fieldName : fields) {
-	            if (fieldMap.containsKey(fieldName)) {
-	                Field field = fieldMap.get(fieldName);
+			for (String fieldName : fields) {
+				if (fieldMap.containsKey(fieldName)) {
+					Field field = fieldMap.get(fieldName);
 
-	                // 🔹 존재하지 않는 필드 제외
-	                Column tf = field.getAnnotation(Column.class);
-	                if (tf != null && !tf.exist()) continue;
+					// 🔹 존재하지 않는 필드 제외
+					Column tf = field.getAnnotation(Column.class);
+					if (tf != null && !tf.exist())
+						continue;
 
-	                field.setAccessible(true);
-	                Object value = field.get(entity);
+					field.setAccessible(true);
+					Object value = field.get(entity);
 
-	                if (field.getName().equals(pk())) {
-	                    continue;
-	                }
+					if (field.getName().equals(pk())) {
+						continue;
+					}
 
-	                if (Config.mapCamelCaseToUnderscore) {
-	                    fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
-	                }
+					if (Config.mapCamelCaseToUnderscore) {
+						fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
+					}
 
-	                if (value != null) {
-	                    param.append("(").append(index).append(")").append(value.toString()).append(" ");
-	                    setPreparedStatementValue(psmt, index++, value);  // 중복 제거!
-	                }
-	            }
-	        }
+					if (value != null) {
+						param.append("(").append(index).append(")").append(value.toString()).append(" ");
+						setPreparedStatementValue(psmt, index++, value); // 중복 제거!
+					}
+				}
+			}
 
-	        // 🔸 WHERE 절 pk 바인딩
-	        param.append("(").append(index).append(")").append(pkValue.toString()).append(" ");
-	        if (pkValue instanceof String) {
-	            psmt.setString(index, (String) pkValue);
-	        } else if (pkValue instanceof Boolean) {
-	            psmt.setBoolean(index, (Boolean) pkValue);
-	        } else if (pkValue instanceof Long) {
-	            psmt.setLong(index, (Long) pkValue);
-	        } else if (pkValue instanceof Integer) {
-	            psmt.setInt(index, (Integer) pkValue);
-	        } else if (pkValue instanceof Double) {
-	            psmt.setDouble(index, (Double) pkValue);
-	        } else if (pkValue instanceof Float) {
-	            psmt.setFloat(index, (Float) pkValue);
-	        } else if (pkValue instanceof java.util.Date) {
-	            psmt.setDate(index, new java.sql.Date(((java.util.Date) pkValue).getTime()));
-	        } else {
-	            psmt.setObject(index, pkValue);
-	        }
+			// 🔸 WHERE 절 pk 바인딩
+			param.append("(").append(index).append(")").append(pkValue.toString()).append(" ");
+			if (pkValue instanceof String) {
+				psmt.setString(index, (String) pkValue);
+			} else if (pkValue instanceof Boolean) {
+				psmt.setBoolean(index, (Boolean) pkValue);
+			} else if (pkValue instanceof Long) {
+				psmt.setLong(index, (Long) pkValue);
+			} else if (pkValue instanceof Integer) {
+				psmt.setInt(index, (Integer) pkValue);
+			} else if (pkValue instanceof Double) {
+				psmt.setDouble(index, (Double) pkValue);
+			} else if (pkValue instanceof Float) {
+				psmt.setFloat(index, (Float) pkValue);
+			} else if (pkValue instanceof java.util.Date) {
+				psmt.setDate(index, new java.sql.Date(((java.util.Date) pkValue).getTime()));
+			} else {
+				psmt.setObject(index, pkValue);
+			}
 
-	        log(sql, param, pkValue.toString());
-	        result = psmt.executeUpdate();
-	    } catch (Exception e) {
-	        System.err.println(table() + " - update(entity, String...) 도중 에러");
-	        e.printStackTrace();
-	    }
+			log(sql, param, pkValue.toString());
+			result = psmt.executeUpdate();
+		} catch (Exception e) {
+			System.err.println(table() + " - update(entity, String...) 도중 에러");
+			e.printStackTrace();
+		}
 
-	    return result;
+		return result;
 	}
-	
+
 	@Override
 	public int updateBy(T entity, Map<String, Object> map) throws Exception {
 		int result = 0;
@@ -1250,15 +1194,18 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		for (Field field : fields) {
 			field.setAccessible(true);
 			Column tf = field.getAnnotation(Column.class);
-			if (tf != null && !tf.exist()) continue;
+			if (tf != null && !tf.exist())
+				continue;
 			String fieldName = field.getName();
 			if (Config.mapCamelCaseToUnderscore) {
 				fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
 			}
-			if (fieldName.equals(pk())) continue;
+			if (fieldName.equals(pk()))
+				continue;
 			Object value = field.get(entity);
 			if (value != null) {
-				if (!first) sql.append(", ");
+				if (!first)
+					sql.append(", ");
 				sql.append(fieldName).append(" = ?");
 				first = false;
 			}
@@ -1272,7 +1219,8 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			if (Config.mapCamelCaseToUnderscore) {
 				fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
 			}
-			if (!firstCond) sql.append(" AND ");
+			if (!firstCond)
+				sql.append(" AND ");
 			sql.append(fieldName).append(" = ?");
 			firstCond = false;
 		}
@@ -1285,12 +1233,14 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			for (Field field : fields) {
 				field.setAccessible(true);
 				Column tf = field.getAnnotation(Column.class);
-				if (tf != null && !tf.exist()) continue;
+				if (tf != null && !tf.exist())
+					continue;
 				String fieldName = field.getName();
 				if (Config.mapCamelCaseToUnderscore) {
 					fieldName = StringUtil.convertCamelCaseToUnderscore(fieldName);
 				}
-				if (fieldName.equals(pk())) continue;
+				if (fieldName.equals(pk()))
+					continue;
 				Object value = field.get(entity);
 				if (value != null) {
 					param.append("(").append(index).append(")").append(value).append(" ");
@@ -1306,7 +1256,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			result = psmt.executeUpdate();
 		} catch (Exception e) {
 			System.err.println(table() + " - updateBy(entity, map) 도중 에러");
-		 e.printStackTrace();
+			e.printStackTrace();
 		}
 		return result;
 	}
@@ -1318,13 +1268,13 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 
 		try {
 			psmt = con.prepareStatement(sql);
-			setPreparedStatementValue(psmt, 1, pk);  // 🔹 타입별 분기 공통 메서드로 분리
+			setPreparedStatementValue(psmt, 1, pk); // 🔹 타입별 분기 공통 메서드로 분리
 
 			log(sql);
 			result = psmt.executeUpdate();
 		} catch (Exception e) {
 			System.err.println(table() + " - delete(pk) 도중 에러");
-		 e.printStackTrace();
+			e.printStackTrace();
 		}
 		return result;
 	}
@@ -1361,11 +1311,10 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			result = psmt.executeUpdate();
 		} catch (Exception e) {
 			System.err.println(table() + " - deleteBy(Map<String, Object> fields) 도중 에러");
-		 e.printStackTrace();
+			e.printStackTrace();
 		}
 		return result;
 	}
-
 
 	@Override
 	public int count() throws Exception {
@@ -1430,53 +1379,53 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			e.printStackTrace();
 		}
 		return total;
-		
+
 	}
-	
+
 	/**
 	 * SQL 로그
+	 * 
 	 * @param sql
 	 */
 	public void log(String sql) {
-		if( Config.sqlLog ) {
+		if (Config.sqlLog) {
 			System.out.println("[SQL] - alcl.jdbc");
-            System.out.println("==================================================");
-            System.out.println(sql);
-            System.out.println("==================================================");
+			System.out.println("==================================================");
+			System.out.println(sql);
+			System.out.println("==================================================");
 		}
 	}
-	
+
 	public void log(StringBuilder sql) {
-		if( Config.sqlLog ) {
+		if (Config.sqlLog) {
 			System.out.println("[SQL] - alcl.jdbc");
-		 System.out.println("==================================================");
+			System.out.println("==================================================");
 			System.out.println(sql.toString());
 			System.out.println("==================================================");
 		}
 	}
-	
+
 	public void log(StringBuilder sql, StringBuilder param) {
-		if( Config.sqlLog ) {
+		if (Config.sqlLog) {
 			System.out.println("[SQL] - alcl.jdbc");
-            System.out.println("==================================================");
-            System.out.println(sql);
-            System.out.println(param.toString());
-            System.out.println("==================================================");
+			System.out.println("==================================================");
+			System.out.println(sql);
+			System.out.println(param.toString());
+			System.out.println("==================================================");
 		}
 	}
-	
+
 	public void log(StringBuilder sql, StringBuilder param, String pk) {
-		if( Config.sqlLog ) {
+		if (Config.sqlLog) {
 			System.out.println("[SQL] - alcl.jdbc");
-		 System.out.println("==================================================");
+			System.out.println("==================================================");
 			System.out.println(sql);
 			System.out.println(param.toString());
 			System.out.println("pk - " + pk() + " : " + pk);
 			System.out.println("==================================================");
 		}
 	}
-	
-	
+
 	// 🔸 타입 분기 공통화
 	private void setPreparedStatementValue(PreparedStatement ps, int index, Object value) throws SQLException {
 		if (value instanceof String) {
@@ -1491,17 +1440,18 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			ps.setDouble(index, (Double) value);
 		} else if (value instanceof Float) {
 			ps.setFloat(index, (Float) value);
-		} else if (value instanceof java.util.Date) {
-			ps.setDate(index, new java.sql.Date(((java.util.Date) value).getTime()));
+		} else if (value instanceof Date) {
+			Date dateValue = (Date) value;
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(dateValue);
+			Timestamp timestampValue = new Timestamp(cal.getTimeInMillis());
+			ps.setTimestamp(index, timestampValue);
 		} else {
 			ps.setObject(index, value);
 		}
 	}
-	
-	
 
 }
-
 
 
 

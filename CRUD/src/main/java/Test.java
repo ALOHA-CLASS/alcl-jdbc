@@ -42,6 +42,20 @@ public class Test {
 		pageObj = pageInfo.getPage();
 		System.out.println("pageObj : " + pageObj);
 		
+		// 수정 테스트
+		Board board2 = Board.builder()
+							.no(1L)	
+							.title("수정")
+							.content("수정")
+							.writer("수정")
+							.build();
+		
+		try {
+			dao.update(board2, "title");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 		
 	}
 
