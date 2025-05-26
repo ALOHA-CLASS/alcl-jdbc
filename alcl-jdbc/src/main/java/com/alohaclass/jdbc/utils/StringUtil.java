@@ -15,4 +15,25 @@ public class StringUtil {
         }
         return result.toString();
     }
+	
+	
+	// underscore --> camel  
+	// * sample_object --> sampleObject
+	public static String convertUnderscoreToCamelCase(String underscore) {
+		StringBuilder result = new StringBuilder();
+		boolean nextUpperCase = false;
+		for (char c : underscore.toCharArray()) {
+			if (c == '_') {
+				nextUpperCase = true;
+			} else {
+				if (nextUpperCase) {
+					result.append(Character.toUpperCase(c));
+					nextUpperCase = false;
+				} else {
+					result.append(c);
+				}
+			}
+		}
+		return result.toString();
+	}
 }

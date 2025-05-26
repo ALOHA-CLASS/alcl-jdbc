@@ -851,6 +851,8 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		sql.append(placeholders.toString());
 
 		try {
+			// 🔹 PreparedStatement 생성
+			// 🔸 Statement.RETURN_GENERATED_KEYS 옵션을 사용하여 AUTO_INCREMENT 키를 가져올 수 있도록 설정
 			psmt = con.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
 			int index = 1;
 
@@ -880,7 +882,12 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 		try (ResultSet generatedKeys = psmt.getGeneratedKeys()) {
 			if (generatedKeys.next()) {
 				genKey = generatedKeys.getLong(1);
-				Field pkField = entity.getClass().getDeclaredField(pk());
+				// Underscore to CamelCase 변환
+				String pk = pk();
+				if (Config.mapUnderscoreToCamelCase) {
+					pk = StringUtil.convertUnderscoreToCamelCase(pk);
+				}
+				Field pkField = entity.getClass().getDeclaredField(pk);
 				pkField.setAccessible(true);
 				if (pkField.getType().equals(Long.class) || pkField.getType().equals(long.class)) {
 					pkField.set(entity, genKey);

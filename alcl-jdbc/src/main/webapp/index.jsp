@@ -1,4 +1,5 @@
 <%-- JSTL --%>
+<%@page import="java.util.UUID"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
 <%@ taglib prefix="sql" uri="http://java.sun.com/jsp/jstl/sql"%>
@@ -43,9 +44,21 @@
     pageContext.setAttribute("list", list);
     
     // board
-//     Board board = boardService.select(1);
 // 	board = boardService.selectById("55432865-3174-11f0-83a9-a8a1596f255e");
 // 	if( board == null ) board = new Board();
+
+	// insertKey
+	Board board = Board.builder()
+			            .id(UUID.randomUUID().toString())
+			            .title("제목입니다.")
+			            .writer("작성자")
+			            .content("내용입니다.")
+			            .date(new java.util.Date())
+			            .build();
+	Board newBoard = boardService.insertKey(board);
+	pageContext.setAttribute("newBoard", newBoard);
+	
+	
 	
 	
 %>
@@ -64,9 +77,11 @@
 	<p>
 		<%= test2.toString() %>
 	</p>
+	
+	<hr>
 	<p>
-<%-- 		<%= board.toString() %> --%>
-	</p>
+	    <%= newBoard.toString() %>
+	</p>	
 	
 	<hr>
 	<table border="1">
@@ -85,7 +100,7 @@
         </c:if>
         <c:forEach var="board" items="${ list }">
             <tr>
-                <td>${board.no}</td>
+                <td>${board.boardNo}</td>
                 <td><a href="${pageContext.request.contextPath}/board/${board.id}">${board.title}</a></td>
                 <td>${board.writer}</td>
                 <td>

@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 public class Board {
 
 	@Pk
-	private Long no;			// 기본키
+	private Long boardNo;			// 기본키
 	private String id;
 	private String title;
 	private String writer;
