@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -81,7 +82,7 @@ public abstract class BaseDAOImpl<T> extends JDBConnection implements BaseDAO<T>
 			} else if (field.getType().equals(Integer.class) || field.getType().equals(int.class)) {
 				field.set(entity, rs.getInt(fieldName));
 			} else if (field.getType().equals(Date.class)) {
-				field.set(entity, rs.getDate(fieldName));
+				field.set(entity, rs.getTimestamp(fieldName));
 			} else if (field.getType().equals(Double.class) || field.getType().equals(double.class)) {
 				field.set(entity, rs.getDouble(fieldName));
 			} else if (field.getType().equals(Float.class) || field.getType().equals(float.class)) {

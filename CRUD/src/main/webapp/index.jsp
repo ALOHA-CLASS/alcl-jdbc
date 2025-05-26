@@ -1,3 +1,4 @@
+
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <!DOCTYPE html>
@@ -7,6 +8,9 @@
 </head>
 <body>
 	<%-- [Contents] ######################################################### --%>
+	
+	
+	<a href="<%= request.getContextPath() %>/board">목록</a>
 	<form action="<%= request.getContextPath() %>/board" method="post">
 		<div>
 			<label for="title">제목</label>
@@ -29,9 +33,6 @@
             <button type="submit">등록</button>
          </div>
 	</form>	
-        
-
-
 	<%-- [Contents] ######################################################### --%>
 </body>
 </html>

@@ -3,10 +3,12 @@ package servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import dao.BoardDAO;
 import dto.Board;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -18,18 +20,26 @@ import service.BoardServiceImpl;
 @WebServlet("/board")
 public class BoardServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-	private BoardDAO boardDAO;
-	private BoardService boardService;
+	private BoardDAO boardDAO = new BoardDAO();
+	private BoardService boardService = new BoardServiceImpl(boardDAO);
 	
        
     public BoardServlet() {
         super();
-        boardDAO = new BoardDAO();
-        boardService = new BoardServiceImpl(boardDAO);
+//        boardDAO = new BoardDAO();
+//        boardService = new BoardServiceImpl(boardDAO);
     }
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		response.getWriter().append("Served at: ").append(request.getContextPath());
+		request.setCharacterEncoding("UTF-8");
+		List<Board> boardList = boardService.list();
+		for (Board board : boardList) {
+			System.out.println("board : " + board);
+		}
+		response.setContentType("text/html; charset=UTF-8");
+		request.setAttribute("boardList", boardList);
+		RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/views/board/list.jsp");		
+		dispatcher.forward(request, response);
 	}
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -77,6 +87,7 @@ public class BoardServlet extends HttpServlet {
 				+ "</body>"
 				+ "</html>");
 		
+		response.sendRedirect(request.getContextPath() + "/board");
 		
 	}
 

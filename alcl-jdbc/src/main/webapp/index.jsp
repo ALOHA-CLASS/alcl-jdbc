@@ -1,3 +1,9 @@
+<%-- JSTL --%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
+<%@ taglib prefix="sql" uri="http://java.sun.com/jsp/jstl/sql"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+
 <%@page import="java.util.ArrayList"%>
 <%@page import="com.alohaclass.jdbc.dto.PageInfo"%>
 <%@page import="com.alohaclass.jdbc.dto.Page"%>
@@ -31,13 +37,15 @@
 	
 	test2 = testService.insertKey(test2);
 	
-	// Board
+	// list
 	BoardService boardService = new BoardServiceImpl();
     List<Board> list = boardService.list();
-    Board board = boardService.select(1);
+    pageContext.setAttribute("list", list);
     
-	board = boardService.selectById("55432865-3174-11f0-83a9-a8a1596f255e");
-	if( board == null ) board = new Board();
+    // board
+//     Board board = boardService.select(1);
+// 	board = boardService.selectById("55432865-3174-11f0-83a9-a8a1596f255e");
+// 	if( board == null ) board = new Board();
 	
 	
 %>
@@ -57,7 +65,36 @@
 		<%= test2.toString() %>
 	</p>
 	<p>
-		<%= board.toString() %>
+<%-- 		<%= board.toString() %> --%>
 	</p>
+	
+	<hr>
+	<table border="1">
+		<tr>
+            <th>번호</th>
+            <th>제목</th>
+            <th>작성자</th>
+            <th>일정</th>
+            <th>등록일자</th>
+            <th>수정일자</th>
+        </tr>
+        <c:if test="${ list != null && list.size() == 0 }">
+            <tr>
+                <td colspan="6">게시글이 없습니다.</td>
+            </tr>
+        </c:if>
+        <c:forEach var="board" items="${ list }">
+            <tr>
+                <td>${board.no}</td>
+                <td><a href="${pageContext.request.contextPath}/board/${board.id}">${board.title}</a></td>
+                <td>${board.writer}</td>
+                <td>
+                	<fmt:formatDate value="${board.date}" pattern="yyyy-MM-dd HH:mm:ss" />
+                </td>
+                <td>${board.createdAt}</td>
+                <td>${board.updatedAt}</td>
+            </tr>
+        </c:forEach>
+	</table>
 </body>
 </html>
